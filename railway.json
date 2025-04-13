@@ -1,0 +1,9 @@
+{
+    "build": {
+      "command": "dotnet restore e-commerce.csproj"
+    },
+    "deploy": {
+      "command": "dotnet run --project e-commerce.csproj"
+    }
+  }
+  
