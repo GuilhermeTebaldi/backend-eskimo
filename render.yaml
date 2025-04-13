@@ -1,10 +1,9 @@
 services:
   - type: web
     name: backend-eskimo
-    runtime: dotnet
+    env: dotnet
+    plan: free
+    branch: main
     rootDir: .
-    buildCommand: "dotnet restore e-commerce.csproj"
-    startCommand: "dotnet run --project e-commerce.csproj"
-    envVars:
-      - key: ASPNETCORE_URLS
-        value: http://0.0.0.0:10000
+    buildCommand: dotnet restore
+    startCommand: dotnet run --project e-commerce.csproj
