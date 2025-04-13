@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "Z1cI0GM16QnfnPnQTQKQIbAQqBtLskXQ+XM5QRFdd08=",
+  "Source": "CSharpAssistant.API",
+  "BasePath": "_content/CSharpAssistant.API",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
