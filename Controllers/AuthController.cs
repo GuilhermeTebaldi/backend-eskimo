@@ -1,60 +1,30 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using e_commerce.Data;
-using e_commerce.Models;
-using e_commerce.Helpers;
-using e_commerce.Services;
-using e_commerce.DTOs;
-
-namespace e_commerce.Controllers
+[HttpPost("register")]
+public async Task<IActionResult> Register()
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    try
     {
-        private readonly AppDbContext _context;
-        private readonly TokenService _tokenService;
+        var email = "admin@eskimo.com";
+        var senha = "admin123";
+        var username = "admin";
 
-        public AuthController(AppDbContext context, TokenService tokenService)
+        if (await _context.Users.AnyAsync(u => u.Email == email))
+            return BadRequest("Admin já foi criado.");
+
+        var user = new User
         {
-            _context = context;
-            _tokenService = tokenService;
-        }
+            Username = username,
+            Email = email,
+            Role = "admin",
+            PasswordHash = PasswordHasher.Hash(senha)
+        };
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register()
-        {
-            var email = "admin@eskimo.com";
-            var senha = "admin123";
-            var username = "admin";
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
 
-            if (await _context.Users.AnyAsync(u => u.Email == email))
-                return BadRequest("Admin já foi criado.");
-
-            var user = new User
-            {
-                Username = username,
-                Email = email,
-                Role = "admin",
-                PasswordHash = PasswordHasher.Hash(senha)
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Admin criado com sucesso" });
-        }
-
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-            if (user == null || !PasswordHasher.Verify(loginDto.Password, user.PasswordHash))
-                return Unauthorized("Credenciais inválidas.");
-
-            var token = _tokenService.GenerateToken(user);
-
-            return Ok(new { token });
-        }
+        return Ok(new { message = "Admin criado com sucesso" });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
     }
 }
