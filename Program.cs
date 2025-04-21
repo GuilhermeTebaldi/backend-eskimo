@@ -125,6 +125,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 // 🌐 Rota padrão
-app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por:Guilherme Tebaldi");
+app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por:Guilherme Tebaldi meu deus que loucura");
 
 app.Run();
