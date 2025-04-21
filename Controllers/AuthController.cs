@@ -1,5 +1,6 @@
 [HttpPost("register")]
-public async Task<IActionResult> Register()
+using Microsoft.AspNetCore.Mvc;
+
 {
     var email = "admin@eskimo.com";
     var senha = "admin123";
