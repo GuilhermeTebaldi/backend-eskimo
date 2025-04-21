@@ -162,3 +162,4 @@
 /Users/admin/Documents/e-commerce/CSharpAssistant.API/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 /Users/admin/Documents/e-commerce/CSharpAssistant.API/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /Users/admin/Documents/e-commerce/CSharpAssistant.API/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
+/Users/admin/Documents/e-commerce/CSharpAssistant.API/obj/Debug/net8.0/e-commerce.sourcelink.json
