@@ -105,7 +105,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // 🚀 Pipeline HTTP
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -114,6 +114,7 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 }
+
 
 app.UseRouting();
 app.UseCors("AllowFrontend");
