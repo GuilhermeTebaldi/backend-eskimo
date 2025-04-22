@@ -78,17 +78,17 @@ builder.Services.AddScoped<ProductService>();
 // 🌐 CORS liberado para localhost e Vercel
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy =>
-        {
-            policy.WithOrigins(
-                "http://localhost:5173",
-                "https://admin-panel-eskimo.vercel.app"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "https://admin-panel-eskimo.vercel.app" // 👈 ADICIONE ISSO AQUI
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    });
 });
+
 
 // 🔐 HTTPS (Opcional)
 const int HttpPort = 8080;
