@@ -75,6 +75,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 🧩 Registro do ProductService
 builder.Services.AddScoped<ProductService>();
 
+// 🌐 CORS liberado para localhost e Vercel
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:5173",
+                "https://admin-panel-eskimo.vercel.app"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+        });
+});
+
 // 🔐 HTTPS (Opcional)
 const int HttpPort = 8080;
 const int HttpsPort = 8443;
@@ -91,22 +106,10 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     }
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5173")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
-});
-
 var app = builder.Build();
 
 // 🚀 Pipeline HTTP
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -116,15 +119,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     });
 }
 
-
 app.UseRouting();
 app.UseCors("AllowFrontend");
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 // 🌐 Rota padrão
-app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por:Guilherme Tebaldi meu deus que loucura");
+app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 
 app.Run();
