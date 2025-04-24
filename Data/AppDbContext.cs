@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using e_commerce.Models;
+using CSharpAssistant.API.Models;
+
 
 namespace e_commerce.Data
 {
@@ -10,5 +12,7 @@ namespace e_commerce.Data
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<User> Users => Set<User>();
+        public DbSet<Subcategory> Subcategories { get; set; }
+
     }
 }

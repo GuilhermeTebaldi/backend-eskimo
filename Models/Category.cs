@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 
-namespace e_commerce.Models
+namespace CSharpAssistant.API.Models
+
 {
     public class Category
     {

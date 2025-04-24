@@ -1,4 +1,11 @@
-namespace e_commerce.Models
+using CSharpAssistant.API.Models;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+
+
+namespace CSharpAssistant.API.Models
+
 {
     public class Product
     {
@@ -12,5 +19,10 @@ namespace e_commerce.Models
         // Relacionamento
         public int CategoryId { get; set; }
         public Category? Category { get; set; }
+        public int? SubcategoryId { get; set; }
+
+[ForeignKey("SubcategoryId")]
+public Subcategory? Subcategory { get; set; }
+
     }
 }

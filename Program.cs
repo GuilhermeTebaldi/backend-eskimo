@@ -4,6 +4,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.ComponentModel.DataAnnotations;
+
+using System.ComponentModel.DataAnnotations.Schema;
+
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using e_commerce.Data;
@@ -82,12 +86,14 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:5173",
-            "https://admin-panel-eskimo.vercel.app" // 👈 ADICIONE ISSO AQUI
+            "https://admin-panel-eskimo.vercel.app"
         )
         .AllowAnyMethod()
-        .AllowAnyHeader();
+        .AllowAnyHeader()
+        .AllowCredentials(); // ← opcional se for usar com credenciais no futuro
     });
 });
+
 
 
 // 🔐 HTTPS (Opcional)

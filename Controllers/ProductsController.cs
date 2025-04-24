@@ -5,6 +5,8 @@ using e_commerce.DTOs;
 using e_commerce.Data;
 using e_commerce.Models;
 using e_commerce.Services;
+using CSharpAssistant.API.Models;
+
 
 namespace e_commerce.Controllers
 {

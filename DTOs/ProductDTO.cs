@@ -1,3 +1,5 @@
+public string? SubcategoryName { get; set; }
+
 namespace e_commerce.DTOs
 {
     public class ProductDTO
