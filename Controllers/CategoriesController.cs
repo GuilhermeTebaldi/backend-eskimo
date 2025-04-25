@@ -23,7 +23,7 @@ namespace CSharpAssistant.API.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        // [Authorize]
         public async Task<IActionResult> GetAll()
         {
             var categories = await _context.Categories.ToListAsync();
