@@ -7,7 +7,6 @@ using e_commerce.Models;
 using e_commerce.Services;
 using CSharpAssistant.API.Models;
 
-
 namespace e_commerce.Controllers
 {
     [ApiController]
@@ -41,10 +40,21 @@ namespace e_commerce.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            _context.Products.Add(product);
+            var entity = new Product
+            {
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                Stock = product.Stock,
+                CategoryId = product.CategoryId,
+                SubcategoryId = product.SubcategoryId // ✅ capturando subcategoria
+            };
+
+            _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+            return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
         }
 
         // 🛠 PUT: api/products/5
@@ -61,6 +71,7 @@ namespace e_commerce.Controllers
             product.ImageUrl = updated.ImageUrl;
             product.Stock = updated.Stock;
             product.CategoryId = updated.CategoryId;
+            product.SubcategoryId = updated.SubcategoryId; // ✅ atualizando subcategoria
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -79,12 +90,13 @@ namespace e_commerce.Controllers
             return NoContent();
         }
 
-        // 📦 GET: api/products/5 (mantido com DTO e Include)
+        // 📦 GET: api/products/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             var product = await _context.Products
                 .Include(p => p.Category)
+                .Include(p => p.Subcategory) // ✅ incluindo subcategoria no retorno
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)
@@ -99,7 +111,9 @@ namespace e_commerce.Controllers
                 ImageUrl = product.ImageUrl,
                 Stock = product.Stock,
                 CategoryId = product.CategoryId,
-                CategoryName = product.Category?.Name
+                CategoryName = product.Category?.Name,
+                SubcategoryId = product.SubcategoryId,
+                SubcategoryName = product.Subcategory?.Name
             };
 
             return Ok(dto);
