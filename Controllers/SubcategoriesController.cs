@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using e_commerce.Data;
 using CSharpAssistant.API.Models;
-
+using e_commerce.Data;
 
 namespace e_commerce.Controllers
 {
