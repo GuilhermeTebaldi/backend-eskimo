@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using e_commerce.Data;
-using e_commerce.Models;
+using CSharpAssistant.API.Models;
+
 
 namespace e_commerce.Controllers
 {
@@ -29,6 +30,9 @@ namespace e_commerce.Controllers
         [Authorize]
         public async Task<IActionResult> Create([FromBody] Subcategory subcategory)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             _context.Subcategories.Add(subcategory);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetAll), new { id = subcategory.Id }, subcategory);
@@ -44,6 +48,7 @@ namespace e_commerce.Controllers
 
             subcategory.Name = updated.Name;
             subcategory.CategoryId = updated.CategoryId;
+
             await _context.SaveChangesAsync();
             return NoContent();
         }
