@@ -1,5 +1,3 @@
-public string? SubcategoryName { get; set; }
-
 namespace e_commerce.DTOs
 {
     public class ProductDTO
@@ -10,7 +8,11 @@ namespace e_commerce.DTOs
         public decimal Price { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
         public int Stock { get; set; }
+
         public int CategoryId { get; set; }
         public string? CategoryName { get; set; }
+
+        public int? SubcategoryId { get; set; }
+        public string? SubcategoryName { get; set; }
     }
 }
