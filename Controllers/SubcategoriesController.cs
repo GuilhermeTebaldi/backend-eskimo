@@ -1,0 +1,26 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using e_commerce.Data;
+using e_commerce.Models;
+
+namespace e_commerce.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SubcategoriesController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public SubcategoriesController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var subcategories = await _context.Subcategories.ToListAsync();
+            return Ok(subcategories);
+        }
+    }
+}
