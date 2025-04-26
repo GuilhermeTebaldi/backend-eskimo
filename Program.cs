@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.ComponentModel.DataAnnotations;
-
 using System.ComponentModel.DataAnnotations.Schema;
 
 using Microsoft.IdentityModel.Tokens;
@@ -87,6 +85,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:5173",
             "https://admin-panel-eskimo.vercel.app"
+            "https://eskimosites.vercel.app" 
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
