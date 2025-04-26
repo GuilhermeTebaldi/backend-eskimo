@@ -84,13 +84,11 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:5173",
-            "https://admin-panel-eskimo.vercel.app"
-            "https://eskimosites.vercel.app" 
-            "https://eskimosites.vercel.app/"
+            "https://admin-panel-eskimo.vercel.app",
+            "https://eskimosites.vercel.app"
         )
         .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials(); // ← opcional se for usar com credenciais no futuro
+        .AllowAnyHeader();
     });
 });
 
