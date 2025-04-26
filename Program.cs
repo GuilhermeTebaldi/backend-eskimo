@@ -86,6 +86,7 @@ builder.Services.AddCors(options =>
             "http://localhost:5173",
             "https://admin-panel-eskimo.vercel.app"
             "https://eskimosites.vercel.app" 
+            "https://eskimosites.vercel.app/"
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
