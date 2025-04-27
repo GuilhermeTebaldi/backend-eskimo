@@ -77,7 +77,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 🧩 Registro do ProductService
 builder.Services.AddScoped<ProductService>();
 
-// 🌐 CORS liberado para localhost e Vercel
+// 🌐 CORS liberado para localhost e sites na Vercel
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -91,8 +91,6 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader();
     });
 });
-
-
 
 // 🔐 HTTPS (Opcional)
 const int HttpPort = 8080;
@@ -128,6 +126,11 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// 🌟 Nova rota para monitoramento do servidor
+app.MapGet("/ping", () => Results.Ok("pong"))
+   .WithName("Ping")
+   .WithTags("Monitoramento");
 
 // 🌐 Rota padrão
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
