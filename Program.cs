@@ -135,4 +135,8 @@ app.MapGet("/ping", () => Results.Ok("pong"))
 // 🌐 Rota padrão
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 
+// 🌟 Nova rota para monitoramento do servidor (aceita GET, POST, HEAD, OPTIONS)
+app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
+
 app.Run();
+
