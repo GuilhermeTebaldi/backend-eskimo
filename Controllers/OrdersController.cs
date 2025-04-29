@@ -32,6 +32,8 @@ namespace e_commerce.Controllers
                 Complement = dto.Complement,
                 Store = dto.Store,
                 Total = dto.Total,
+                Status = "pendente",
+                PhoneNumber = dto.PhoneNumber, // ✅ AQUI ADICIONADO
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
@@ -65,7 +67,8 @@ namespace e_commerce.Controllers
                     order.Complement,
                     order.Store,
                     order.Total,
-                    order.Status, // ✅ Exibir status do pedido
+                    order.Status,
+                    order.PhoneNumber, // ✅ Mostrar telefone também
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
