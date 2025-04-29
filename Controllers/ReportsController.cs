@@ -25,7 +25,7 @@ namespace e_commerce.Controllers
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
-            // Mapeamento dos nomes amigáveis para os nomes reais salvos no banco
+            // Corrigir nome da loja se necessário
             store = store.ToLower().Replace("-", "").Replace(" ", "");
             if (store == "passodosfortes") store = "Passo dos Fortes";
             else if (store == "efapi") store = "Efapi";
@@ -79,7 +79,8 @@ namespace e_commerce.Controllers
             .GeneratePdf(pdfStream);
 
             pdfStream.Position = 0;
-            return File(pdfStream, "application/pdf", $"relatorio_{store.ToLower().Replace(\" \", \"_\")}.pdf");
+            var fileName = $"relatorio_{store.ToLower().Replace(" ", "_")}.pdf";
+            return File(pdfStream, "application/pdf", fileName);
         }
     }
 }
