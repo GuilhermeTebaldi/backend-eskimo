@@ -4,6 +4,7 @@ using e_commerce.Models;
 using e_commerce.Data;
 using e_commerce.DTOs;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace e_commerce.Controllers
 {
@@ -20,7 +21,7 @@ namespace e_commerce.Controllers
 
         // 🔴 POST: Criar novo pedido
         [HttpPost]
-        public IActionResult CreateOrder(OrderDTO dto)
+        public async Task<IActionResult> CreateOrder(OrderDTO dto)
         {
             var order = new Order
             {
@@ -33,7 +34,7 @@ namespace e_commerce.Controllers
                 Store = dto.Store,
                 Total = dto.Total,
                 Status = "pendente",
-                PhoneNumber = dto.PhoneNumber, // ✅ AQUI ADICIONADO
+                PhoneNumber = dto.PhoneNumber,
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
@@ -44,16 +45,16 @@ namespace e_commerce.Controllers
             };
 
             _context.Orders.Add(order);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Pedido salvo com sucesso!" });
         }
 
         // 🟡 GET: Listar todos os pedidos
         [HttpGet]
-        public IActionResult GetAllOrders()
+        public async Task<IActionResult> GetAllOrders()
         {
-            var orders = _context.Orders
+            var orders = await _context.Orders
                 .Include(o => o.Items)
                 .OrderByDescending(o => o.Id)
                 .Select(order => new
@@ -68,7 +69,7 @@ namespace e_commerce.Controllers
                     order.Store,
                     order.Total,
                     order.Status,
-                    order.PhoneNumber, // ✅ Mostrar telefone também
+                    order.PhoneNumber,
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
@@ -77,7 +78,7 @@ namespace e_commerce.Controllers
                         item.Quantity
                     }).ToList()
                 })
-                .ToList();
+                .ToListAsync();
 
             return Ok(orders);
         }
@@ -87,10 +88,26 @@ namespace e_commerce.Controllers
         public async Task<IActionResult> ConfirmOrder(int id)
         {
             var order = await _context.Orders.FindAsync(id);
-            if (order == null) return NotFound();
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
 
             order.Status = "pago";
             await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // 🟢 PATCH: Marcar como entregue
+        [HttpPatch("{id}/deliver")]
+        public async Task<IActionResult> DeliverOrder(int id)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
+
+            order.Status = "entregue";
+            await _context.SaveChangesAsync();
+
             return NoContent();
         }
 
@@ -102,7 +119,8 @@ namespace e_commerce.Controllers
                 .Include(o => o.Items)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null) return NotFound();
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
 
             _context.OrderItems.RemoveRange(order.Items);
             _context.Orders.Remove(order);
