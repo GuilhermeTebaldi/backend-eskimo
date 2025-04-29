@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "gPX7IqiwljM=",
+  "dgSpecHash": "REL5wCGJIvA=",
   "success": true,
   "projectFilePath": "/Users/admin/Documents/e-commerce/CSharpAssistant.API/e-commerce.csproj",
   "expectedPackageFiles": [
@@ -42,6 +42,7 @@
     "/Users/admin/.nuget/packages/mono.texttemplating/3.0.0/mono.texttemplating.3.0.0.nupkg.sha512",
     "/Users/admin/.nuget/packages/npgsql/9.0.3/npgsql.9.0.3.nupkg.sha512",
     "/Users/admin/.nuget/packages/npgsql.entityframeworkcore.postgresql/9.0.4/npgsql.entityframeworkcore.postgresql.9.0.4.nupkg.sha512",
+    "/Users/admin/.nuget/packages/questpdf/2025.4.0/questpdf.2025.4.0.nupkg.sha512",
     "/Users/admin/.nuget/packages/swashbuckle.aspnetcore/8.1.1/swashbuckle.aspnetcore.8.1.1.nupkg.sha512",
     "/Users/admin/.nuget/packages/swashbuckle.aspnetcore.swagger/8.1.1/swashbuckle.aspnetcore.swagger.8.1.1.nupkg.sha512",
     "/Users/admin/.nuget/packages/swashbuckle.aspnetcore.swaggergen/8.1.1/swashbuckle.aspnetcore.swaggergen.8.1.1.nupkg.sha512",

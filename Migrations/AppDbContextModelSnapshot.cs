@@ -126,6 +126,9 @@ namespace ecommerce.Migrations
                     b.Property<string>("Number")
                         .HasColumnType("text");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
