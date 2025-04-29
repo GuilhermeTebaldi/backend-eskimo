@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,9 +25,15 @@ namespace e_commerce.Controllers
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
+            // Mapeamento dos nomes amigáveis para os nomes reais salvos no banco
+            store = store.ToLower().Replace("-", "").Replace(" ", "");
+            if (store == "passodosfortes") store = "Passo dos Fortes";
+            else if (store == "efapi") store = "Efapi";
+            else if (store == "palmital") store = "Palmital";
+
             var pedidos = await _context.Orders
                 .Include(p => p.Items)
-                .Where(p => p.Store.ToLower().Contains(store.ToLower()))
+                .Where(p => p.Store == store)
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();
 
@@ -36,7 +41,6 @@ namespace e_commerce.Controllers
                 return NotFound(new { message = "Nenhum pedido encontrado para esta loja." });
 
             var totalGeral = pedidos.Sum(p => p.Total);
-
             var pdfStream = new MemoryStream();
 
             Document.Create(container =>
@@ -75,7 +79,7 @@ namespace e_commerce.Controllers
             .GeneratePdf(pdfStream);
 
             pdfStream.Position = 0;
-            return File(pdfStream, "application/pdf", $"relatorio_{store.ToLower()}.pdf");
+            return File(pdfStream, "application/pdf", $"relatorio_{store.ToLower().Replace(\" \", \"_\")}.pdf");
         }
     }
 }
