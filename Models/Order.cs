@@ -13,6 +13,9 @@ namespace e_commerce.Models
         public string? Complement { get; set; }
         public string Store { get; set; } = string.Empty;
         public decimal Total { get; set; }
+        public string Status { get; set; } = "pendente"; // ou "pago", "entregue"
+
+
 
         public List<OrderItem> Items { get; set; } = new();
     }
