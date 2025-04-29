@@ -10,6 +10,9 @@ namespace e_commerce.DTOs
         public string? Complement { get; set; }
         public string Store { get; set; } = string.Empty;
         public decimal Total { get; set; }
+
+        public string? PhoneNumber { get; set; } // ✅ CORRETO AQUI!
+
         public List<OrderItemDTO> Items { get; set; } = new();
     }
 
