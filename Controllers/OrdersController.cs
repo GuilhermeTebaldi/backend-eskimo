@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using e_commerce.Models;
-
-
 using e_commerce.Data;
 using e_commerce.DTOs;
-
 using System.Linq;
 
 namespace e_commerce.Controllers
@@ -20,6 +18,7 @@ namespace e_commerce.Controllers
             _context = context;
         }
 
+        // 🔴 POST: Criar novo pedido
         [HttpPost]
         public IActionResult CreateOrder(OrderDTO dto)
         {
@@ -48,10 +47,13 @@ namespace e_commerce.Controllers
             return Ok(new { message = "Pedido salvo com sucesso!" });
         }
 
+        // 🟡 GET: Listar todos os pedidos
         [HttpGet]
         public IActionResult GetAllOrders()
         {
             var orders = _context.Orders
+                .Include(o => o.Items)
+                .OrderByDescending(o => o.Id)
                 .Select(order => new
                 {
                     order.Id,
@@ -63,6 +65,7 @@ namespace e_commerce.Controllers
                     order.Complement,
                     order.Store,
                     order.Total,
+                    order.Status, // ✅ Exibir status do pedido
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
@@ -74,6 +77,35 @@ namespace e_commerce.Controllers
                 .ToList();
 
             return Ok(orders);
+        }
+
+        // 🟢 PATCH: Confirmar pagamento
+        [HttpPatch("{id}/confirm")]
+        public async Task<IActionResult> ConfirmOrder(int id)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null) return NotFound();
+
+            order.Status = "pago";
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // 🔴 DELETE: Excluir pedido
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteOrder(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null) return NotFound();
+
+            _context.OrderItems.RemoveRange(order.Items);
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
