@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.ComponentModel.DataAnnotations.Schema;
+using QuestPDF.Infrastructure;
 
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -109,6 +110,10 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 });
 
 var app = builder.Build();
+
+// 🌟 Configurar licença do QuestPDF
+QuestPDF.Settings.License = LicenseType.Community;
+
 
 // 🚀 Pipeline HTTP
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
