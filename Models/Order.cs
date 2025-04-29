@@ -14,6 +14,7 @@ namespace e_commerce.Models
         public string Store { get; set; } = string.Empty;
         public decimal Total { get; set; }
         public string Status { get; set; } = "pendente"; // ou "pago", "entregue"
+public string? PhoneNumber { get; set; } // WhatsApp do cliente
 
 
 
