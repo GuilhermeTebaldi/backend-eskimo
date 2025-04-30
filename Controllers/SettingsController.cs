@@ -8,9 +8,7 @@ using System.Threading.Tasks;
 namespace e_commerce.Controllers
 {
     [ApiController]
-    
     [Route("api/[controller]")]
-    [ApiExplorerSettings(GroupName = "v1")] // <- ESSENCIAL para aparecer no Swagger
     public class SettingsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -51,6 +49,19 @@ namespace e_commerce.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Configuração atualizada com sucesso." });
+        }
+
+        // DELETE: api/settings
+        [HttpDelete]
+        public async Task<IActionResult> DeleteSetting()
+        {
+            var setting = await _context.Settings.FirstOrDefaultAsync();
+            if (setting == null)
+                return NotFound(new { message = "Nenhuma configuração para excluir." });
+
+            _context.Settings.Remove(setting);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Configuração removida com sucesso." });
         }
     }
 }

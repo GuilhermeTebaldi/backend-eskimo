@@ -33,6 +33,7 @@ namespace e_commerce.Controllers
                 Complement = dto.Complement,
                 Store = dto.Store,
                 Total = dto.Total,
+                DeliveryFee = dto.DeliveryFee, // ✅ ADICIONE ESTA LINHA
                 Status = "pendente",
                 PhoneNumber = dto.PhoneNumber,
                 Items = dto.Items.Select(i => new OrderItem
