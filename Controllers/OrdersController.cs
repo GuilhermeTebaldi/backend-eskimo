@@ -61,6 +61,8 @@ namespace e_commerce.Controllers
                 .Select(order => new
                 {
                     order.Id,
+                    order.CustomerName,
+
                     name = order.CustomerName, // ✅ alias compatível com MeusPedidos.tsx
                     order.DeliveryType,
                     order.Address,
