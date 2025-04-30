@@ -33,7 +33,7 @@ namespace e_commerce.Controllers
                 Complement = dto.Complement,
                 Store = dto.Store,
                 Total = dto.Total,
-                DeliveryFee = dto.DeliveryFee, // ✅ ADICIONE ESTA LINHA
+                DeliveryFee = dto.DeliveryFee,
                 Status = "pendente",
                 PhoneNumber = dto.PhoneNumber,
                 Items = dto.Items.Select(i => new OrderItem
@@ -49,7 +49,6 @@ namespace e_commerce.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
-
         }
 
         // 🟡 GET: Listar todos os pedidos
@@ -62,7 +61,7 @@ namespace e_commerce.Controllers
                 .Select(order => new
                 {
                     order.Id,
-                    order.CustomerName,
+                    name = order.CustomerName, // ✅ alias compatível com MeusPedidos.tsx
                     order.DeliveryType,
                     order.Address,
                     order.Street,
