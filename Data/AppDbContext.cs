@@ -15,6 +15,8 @@ namespace e_commerce.Data
         public DbSet<Subcategory> Subcategories { get; set; }        // ✅ Adicione essas linhas:
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Setting> Settings { get; set; }
+        
 
     }
 }
