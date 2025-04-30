@@ -47,7 +47,8 @@ namespace e_commerce.Controllers
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pedido salvo com sucesso!" });
+            return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
+
         }
 
         // 🟡 GET: Listar todos os pedidos
