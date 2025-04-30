@@ -76,7 +76,7 @@ namespace e_commerce.Controllers
                         item.ProductId,
                         item.Name,
                         item.Price,
-                        item.Quantity
+                        item.Quantity,
                           ImageUrl = item.Product.ImageUrl // 👈 Aqui pega a imagem do produto
                     }).ToList()
                 })
