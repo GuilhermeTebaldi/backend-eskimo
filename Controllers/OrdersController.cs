@@ -56,6 +56,7 @@ namespace e_commerce.Controllers
         {
             var orders = await _context.Orders
                 .Include(o => o.Items)
+                .ThenInclude(i => i.Product) // 👈 Carrega os dados do produto
                 .OrderByDescending(o => o.Id)
                 .Select(order => new
                 {
@@ -76,6 +77,7 @@ namespace e_commerce.Controllers
                         item.Name,
                         item.Price,
                         item.Quantity
+                          ImageUrl = item.Product.ImageUrl // 👈 Aqui pega a imagem do produto
                     }).ToList()
                 })
                 .ToListAsync();
