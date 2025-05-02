@@ -1,6 +1,8 @@
 using CSharpAssistant.API.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CSharpAssistant.API.Models;
+using e_commerce.Models;
 
 using System.ComponentModel.DataAnnotations.Schema;
 
