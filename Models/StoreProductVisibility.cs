@@ -15,5 +15,8 @@ namespace CSharpAssistant.API.Models
 
         [ForeignKey("ProductId")]
         public Product Product { get; set; } = null!;
+
+        // ✅ Campo que faltava para evitar o erro CS1061:
+        public bool IsVisible { get; set; } = true;
     }
 }
