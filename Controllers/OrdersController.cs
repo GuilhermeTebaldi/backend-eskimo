@@ -73,6 +73,7 @@ namespace e_commerce.Controllers
                     order.Total,
                     order.Status,
                     order.PhoneNumber,
+                     order.DeliveryFee,
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
