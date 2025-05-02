@@ -29,6 +29,7 @@ namespace CSharpAssistant.API.Models
 public Subcategory? Subcategory { get; set; }
 
 
+public ICollection<StoreStock>? StoreStocks { get; set; }
 
     }
 }
