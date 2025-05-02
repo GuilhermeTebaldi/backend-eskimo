@@ -6,6 +6,7 @@ using e_commerce.Data;
 using e_commerce.Models;
 using e_commerce.Services;
 using CSharpAssistant.API.Models;
+using System.Linq;
 
 namespace e_commerce.Controllers
 {
@@ -47,12 +48,24 @@ namespace e_commerce.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = product.Stock,
                 CategoryId = product.CategoryId,
                 SubcategoryId = product.SubcategoryId
             };
 
             _context.Products.Add(entity);
+            await _context.SaveChangesAsync();
+
+            // Criar estoques iguais para cada loja com valor default (ex: 0)
+            foreach (var store in new[] { "efapi", "palmital", "passo" })
+            {
+                _context.StoreStocks.Add(new StoreStock
+                {
+                    ProductId = entity.Id,
+                    Store = store,
+                    Quantity = 0
+                });
+            }
+
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
@@ -70,7 +83,6 @@ namespace e_commerce.Controllers
             product.Description = updated.Description;
             product.Price = updated.Price;
             product.ImageUrl = updated.ImageUrl;
-            product.Stock = updated.Stock;
             product.CategoryId = updated.CategoryId;
             product.SubcategoryId = updated.SubcategoryId;
 
@@ -110,7 +122,7 @@ namespace e_commerce.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = product.Stock,
+                Stock = 0, // Valor fixo ou ignorado
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
@@ -143,10 +155,8 @@ namespace e_commerce.Controllers
             if (product == null)
                 return NotFound();
 
-            // Remove todas as visibilidades antigas
             _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
 
-            // Adiciona novas visibilidades
             foreach (var store in stores)
             {
                 _context.StoreProductVisibilities.Add(new StoreProductVisibility
