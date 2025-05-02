@@ -28,7 +28,7 @@ namespace e_commerce.Controllers
             [FromQuery] string? name,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 100,
-            [FromQuery] string? store = null) // 🆕 recebe o nome da loja
+            [FromQuery] string? store = null)
         {
             var result = _productService.GetAllProducts(name, page, pageSize, store);
             return Ok(result);
@@ -118,6 +118,46 @@ namespace e_commerce.Controllers
             };
 
             return Ok(dto);
+        }
+
+        // 👁️‍🗨️ GET: api/products/5/visibility
+        [HttpGet("{id}/visibility")]
+        public async Task<IActionResult> GetVisibility(int id)
+        {
+            var stores = await _context.StoreProductVisibilities
+                .Where(v => v.ProductId == id)
+                .Select(v => v.Store)
+                .ToListAsync();
+
+            return Ok(stores);
+        }
+
+        // ✅ POST: api/products/5/visibility
+        [HttpPost("{id}/visibility")]
+        public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
+        {
+            var product = await _context.Products
+                .Include(p => p.Visibilities)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+                return NotFound();
+
+            // Remove todas as visibilidades antigas
+            _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
+
+            // Adiciona novas visibilidades
+            foreach (var store in stores)
+            {
+                _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                {
+                    ProductId = id,
+                    Store = store
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
         }
     }
 }
