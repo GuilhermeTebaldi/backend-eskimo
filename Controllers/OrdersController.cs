@@ -41,11 +41,28 @@ namespace e_commerce.Controllers
                     ProductId = i.ProductId,
                     Name = i.Name,
                     Price = i.Price,
-                    Quantity = i.Quantity
+                    Quantity = i.Quantity,
+                    ImageUrl = i.ImageUrl,
+                    Store = dto.Store
                 }).ToList()
             };
 
             _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            // ✅ Descontar estoque da loja
+            foreach (var item in order.Items)
+            {
+                var stock = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
+
+                if (stock != null)
+                {
+                    stock.Quantity -= item.Quantity;
+                    if (stock.Quantity < 0) stock.Quantity = 0;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
@@ -62,8 +79,7 @@ namespace e_commerce.Controllers
                 {
                     order.Id,
                     order.CustomerName,
-
-                    name = order.CustomerName, // ✅ alias compatível com MeusPedidos.tsx
+                    name = order.CustomerName,
                     order.DeliveryType,
                     order.Address,
                     order.Street,
@@ -73,13 +89,15 @@ namespace e_commerce.Controllers
                     order.Total,
                     order.Status,
                     order.PhoneNumber,
-                     order.DeliveryFee,
+                    order.DeliveryFee,
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
                         item.Name,
                         item.Price,
-                        item.Quantity
+                        item.Quantity,
+                        item.ImageUrl,
+                        item.Store
                     }).ToList()
                 })
                 .ToListAsync();

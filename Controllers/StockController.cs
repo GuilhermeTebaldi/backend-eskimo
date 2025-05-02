@@ -1,0 +1,73 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using e_commerce.Data;
+using e_commerce.Models;
+using System.Threading.Tasks;
+
+namespace e_commerce.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class StockController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public StockController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // 🔎 GET: /api/stock
+        [HttpGet]
+        public async Task<IActionResult> GetAllStocks()
+        {
+            var stocks = await _context.StoreStocks
+                .Include(s => s.Product)
+                .ToListAsync();
+
+            var result = stocks
+                .GroupBy(s => s.ProductId)
+                .Select(group => new
+                {
+                    ProductId = group.Key,
+                    ProductName = group.First().Product.Name,
+                    ImageUrl = group.First().Product.ImageUrl,
+                    Efapi = group.FirstOrDefault(s => s.Store == "efapi")?.Quantity ?? 0,
+                    Palmital = group.FirstOrDefault(s => s.Store == "palmital")?.Quantity ?? 0,
+                    Passo = group.FirstOrDefault(s => s.Store == "passo")?.Quantity ?? 0
+                });
+
+            return Ok(result);
+        }
+
+        // 💾 POST: /api/stock/{productId}
+        [HttpPost("{productId}")]
+        public async Task<IActionResult> UpdateStock(int productId, [FromBody] Dictionary<string, int> stocks)
+        {
+            foreach (var store in new[] { "efapi", "palmital", "passo" })
+            {
+                var quantity = stocks.ContainsKey(store) ? stocks[store] : 0;
+
+                var existing = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store == store);
+
+                if (existing != null)
+                {
+                    existing.Quantity = quantity;
+                }
+                else
+                {
+                    _context.StoreStocks.Add(new StoreStock
+                    {
+                        ProductId = productId,
+                        Store = store,
+                        Quantity = quantity
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Estoque atualizado com sucesso!" });
+        }
+    }
+}

@@ -16,7 +16,7 @@ namespace e_commerce.Models
         public string Status { get; set; } = "pendente"; // ou "pago", "entregue"
 public string? PhoneNumber { get; set; } // WhatsApp do cliente
 public decimal DeliveryFee { get; set; }  // 💸 valor calculado pela distância
-
+public string? ImageUrl { get; set; }
 
         public List<OrderItem> Items { get; set; } = new();
     }

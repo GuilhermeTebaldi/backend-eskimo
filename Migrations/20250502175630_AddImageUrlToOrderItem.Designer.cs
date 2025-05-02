@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using e_commerce.Data;
@@ -11,9 +12,11 @@ using e_commerce.Data;
 namespace ecommerce.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250502175630_AddImageUrlToOrderItem")]
+    partial class AddImageUrlToOrderItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,9 +53,6 @@ namespace ecommerce.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CategoryId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -77,8 +77,6 @@ namespace ecommerce.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("CategoryId1");
 
                     b.HasIndex("SubcategoryId");
 
@@ -238,32 +236,6 @@ namespace ecommerce.Migrations
                     b.ToTable("Settings");
                 });
 
-            modelBuilder.Entity("e_commerce.Models.StoreStock", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Store")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId", "Store")
-                        .IsUnique();
-
-                    b.ToTable("StoreStocks");
-                });
-
             modelBuilder.Entity("e_commerce.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -296,14 +268,10 @@ namespace ecommerce.Migrations
             modelBuilder.Entity("CSharpAssistant.API.Models.Product", b =>
                 {
                     b.HasOne("CSharpAssistant.API.Models.Category", "Category")
-                        .WithMany()
+                        .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("CSharpAssistant.API.Models.Category", null)
-                        .WithMany("Products")
-                        .HasForeignKey("CategoryId1");
 
                     b.HasOne("CSharpAssistant.API.Models.Subcategory", "Subcategory")
                         .WithMany()
@@ -345,17 +313,6 @@ namespace ecommerce.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
-                });
-
-            modelBuilder.Entity("e_commerce.Models.StoreStock", b =>
-                {
-                    b.HasOne("CSharpAssistant.API.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("CSharpAssistant.API.Models.Category", b =>

@@ -10,7 +10,7 @@ namespace e_commerce.DTOs
         public string? Complement { get; set; }
         public string Store { get; set; } = string.Empty;
         public decimal Total { get; set; }
-
+ public string? ImageUrl { get; set; }
         public decimal DeliveryFee { get; set; } // ✅ NOVO CAMPO AQUI
 
         public string? PhoneNumber { get; set; }
@@ -24,5 +24,8 @@ namespace e_commerce.DTOs
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int Quantity { get; set; }
+         public string? ImageUrl { get; set; }
+         public string Store { get; set; } = string.Empty;
+
     }
 }

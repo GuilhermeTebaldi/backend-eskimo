@@ -11,5 +11,8 @@ namespace e_commerce.Models
 
         public int OrderId { get; set; }
         public Order Order { get; set; } = null!;
+         public string? ImageUrl { get; set; }
+         public string Store { get; set; } = string.Empty; // Loja que vendeu o produto
+
     }
 }
