@@ -22,14 +22,15 @@ namespace e_commerce.Controllers
             _productService = productService;
         }
 
-        // 📦 GET: api/products/list
+        // 📦 GET: api/products/list?store=efapi
         [HttpGet("list")]
         public IActionResult GetFiltered(
             [FromQuery] string? name,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 100)
+            [FromQuery] int pageSize = 100,
+            [FromQuery] string? store = null) // 🆕 recebe o nome da loja
         {
-            var result = _productService.GetAllProducts(name, page, pageSize);
+            var result = _productService.GetAllProducts(name, page, pageSize, store);
             return Ok(result);
         }
 
@@ -48,7 +49,7 @@ namespace e_commerce.Controllers
                 ImageUrl = product.ImageUrl,
                 Stock = product.Stock,
                 CategoryId = product.CategoryId,
-                SubcategoryId = product.SubcategoryId // ✅ capturando subcategoria
+                SubcategoryId = product.SubcategoryId
             };
 
             _context.Products.Add(entity);
@@ -71,7 +72,7 @@ namespace e_commerce.Controllers
             product.ImageUrl = updated.ImageUrl;
             product.Stock = updated.Stock;
             product.CategoryId = updated.CategoryId;
-            product.SubcategoryId = updated.SubcategoryId; // ✅ atualizando subcategoria
+            product.SubcategoryId = updated.SubcategoryId;
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -96,7 +97,7 @@ namespace e_commerce.Controllers
         {
             var product = await _context.Products
                 .Include(p => p.Category)
-                .Include(p => p.Subcategory) // ✅ incluindo subcategoria no retorno
+                .Include(p => p.Subcategory)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)

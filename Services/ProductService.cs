@@ -13,13 +13,21 @@ namespace e_commerce.Services
             _context = context;
         }
 
-        public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10)
+        public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10, string? store = null)
         {
             var query = _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
+                .Include(p => p.Visibilities) // 👈 inclui visibilidades por loja
                 .AsQueryable();
 
+            // 🔍 Filtro por loja
+            if (!string.IsNullOrEmpty(store))
+            {
+                query = query.Where(p => p.Visibilities.Any(v => v.Store == store));
+            }
+
+            // 🔍 Filtro por nome (search)
             if (!string.IsNullOrEmpty(nameFilter))
             {
                 nameFilter = nameFilter.ToLower();

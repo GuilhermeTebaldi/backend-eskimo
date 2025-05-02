@@ -11,7 +11,9 @@ namespace e_commerce.DTOs
         public string Store { get; set; } = string.Empty;
         public decimal Total { get; set; }
 
-        public string? PhoneNumber { get; set; } // ✅ CORRETO AQUI!
+        public decimal DeliveryFee { get; set; } // ✅ NOVO CAMPO AQUI
+
+        public string? PhoneNumber { get; set; }
 
         public List<OrderItemDTO> Items { get; set; } = new();
     }
