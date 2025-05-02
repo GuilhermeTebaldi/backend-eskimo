@@ -15,7 +15,9 @@ namespace CSharpAssistant.API.Models
         public decimal Price { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
         public int Stock { get; set; }
-       
+       public List<StoreProductVisibility> Visibilities { get; set; } = new();
+
+
 
 
         // Relacionamento
@@ -25,8 +27,8 @@ namespace CSharpAssistant.API.Models
 
 [ForeignKey("SubcategoryId")]
 public Subcategory? Subcategory { get; set; }
-   // ✅ RELACIONAMENTO COM VISIBILIDADE
- public List<StoreProductVisibility> Visibilities { get; set; } = new();
+
+
 
     }
 }
