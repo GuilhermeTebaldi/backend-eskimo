@@ -16,6 +16,8 @@ namespace e_commerce.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Setting> Settings { get; set; }
         public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
+        
+
         public DbSet<StoreStock> StoreStocks { get; set; }
 
 

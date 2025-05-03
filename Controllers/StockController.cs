@@ -1,3 +1,5 @@
+using CSharpAssistant.API.Models;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using e_commerce.Data;
