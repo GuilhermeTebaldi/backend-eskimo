@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using e_commerce.Data;
 using e_commerce.Models;
-using System.Threading.Tasks;
 
 namespace e_commerce.Controllers
 {
@@ -48,26 +47,50 @@ namespace e_commerce.Controllers
             {
                 var quantity = stocks.ContainsKey(store) ? stocks[store] : 0;
 
-                var existing = await _context.StoreStocks
-                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store == store);
+                // Atualizar estoque
+                var existingStock = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == store.ToLower());
 
-                if (existing != null)
+                if (existingStock != null)
                 {
-                    existing.Quantity = quantity;
+                    existingStock.Quantity = quantity;
                 }
                 else
                 {
                     _context.StoreStocks.Add(new StoreStock
                     {
                         ProductId = productId,
-                        Store = store,
+                        Store = store.ToLower(),
                         Quantity = quantity
                     });
+                }
+
+                // Atualizar visibilidade automaticamente com base no estoque
+                var visibility = await _context.StoreProductVisibilities
+                    .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == store.ToLower());
+
+                if (quantity > 0)
+                {
+                    if (visibility == null)
+                    {
+                        _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                        {
+                            ProductId = productId,
+                            Store = store.ToLower()
+                        });
+                    }
+                }
+                else
+                {
+                    if (visibility != null)
+                    {
+                        _context.StoreProductVisibilities.Remove(visibility);
+                    }
                 }
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Estoque atualizado com sucesso!" });
+            return Ok(new { message = "Estoque e visibilidade atualizados com sucesso!" });
         }
     }
 }
