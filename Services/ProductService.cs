@@ -18,20 +18,18 @@ namespace CSharpAssistant.API.Services
             var query = _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
-                .Include(p => p.Visibilities)
-                .Include(p => p.StoreStocks) // ✅ inclui os estoques por loja
+                .Include(p => p.StoreStocks) // ✅ Usa apenas estoques por loja
                 .AsQueryable();
 
-            // 🔍 Filtro por loja: visibilidade + estoque > 0
+            // ✅ Se tiver loja, só mostra produtos com estoque > 0
             if (!string.IsNullOrEmpty(store))
             {
                 query = query.Where(p =>
-               
                     p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0)
                 );
             }
 
-            // 🔍 Filtro por nome
+            // 🔍 Filtro por nome do produto (opcional)
             if (!string.IsNullOrEmpty(nameFilter))
             {
                 nameFilter = nameFilter.ToLower();
