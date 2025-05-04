@@ -1,13 +1,8 @@
-using CSharpAssistant.API.Models;
-
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Data;
-using CSharpAssistant.API.Models;
 
-namespace CSharpAssistant.API.Models
-
+namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -24,21 +19,18 @@ namespace CSharpAssistant.API.Models
         [HttpGet]
         public async Task<IActionResult> GetAllStocks()
         {
-            var stocks = await _context.StoreStocks
-                .Include(s => s.Product)
-                .ToListAsync();
+            var products = await _context.Products.ToListAsync();
+            var stocks = await _context.StoreStocks.ToListAsync();
 
-            var result = stocks
-                .GroupBy(s => s.ProductId)
-                .Select(group => new
-                {
-                    ProductId = group.Key,
-                    ProductName = group.First().Product.Name,
-                    ImageUrl = group.First().Product.ImageUrl,
-                    Efapi = group.FirstOrDefault(s => s.Store == "efapi")?.Quantity ?? 0,
-                    Palmital = group.FirstOrDefault(s => s.Store == "palmital")?.Quantity ?? 0,
-                    Passo = group.FirstOrDefault(s => s.Store == "passo")?.Quantity ?? 0
-                });
+            var result = products.Select(p => new
+            {
+                ProductId = p.Id,
+                ProductName = p.Name,
+                ImageUrl = p.ImageUrl,
+                Efapi = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "efapi")?.Quantity ?? 0,
+                Palmital = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "palmital")?.Quantity ?? 0,
+                Passo = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
+            });
 
             return Ok(result);
         }
@@ -51,7 +43,6 @@ namespace CSharpAssistant.API.Models
             {
                 var quantity = stocks.ContainsKey(store) ? stocks[store] : 0;
 
-                // Atualizar estoque
                 var existingStock = await _context.StoreStocks
                     .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == store.ToLower());
 
@@ -61,7 +52,7 @@ namespace CSharpAssistant.API.Models
                 }
                 else
                 {
-                    _context.StoreStocks.Add(new StoreStock
+                    _context.StoreStocks.Add(new Models.StoreStock
                     {
                         ProductId = productId,
                         Store = store.ToLower(),
@@ -69,7 +60,6 @@ namespace CSharpAssistant.API.Models
                     });
                 }
 
-                // Atualizar visibilidade automaticamente com base no estoque
                 var visibility = await _context.StoreProductVisibilities
                     .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == store.ToLower());
 
@@ -77,7 +67,7 @@ namespace CSharpAssistant.API.Models
                 {
                     if (visibility == null)
                     {
-                        _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                        _context.StoreProductVisibilities.Add(new Models.StoreProductVisibility
                         {
                             ProductId = productId,
                             Store = store.ToLower()
