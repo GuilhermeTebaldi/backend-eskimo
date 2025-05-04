@@ -119,7 +119,22 @@ var app = builder.Build();
 QuestPDF.Settings.License = LicenseType.Community;
 
 // ✅ Executa script de importação de produtos (se existir JSON)
-ImportProductsFromJson.Run(app);
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Só importa se não houver produtos ainda
+    if (!db.Products.Any())
+    {
+        Console.WriteLine("📦 Nenhum produto encontrado. Iniciando importação...");
+        ImportProductsFromJson.Run(app);
+    }
+    else
+    {
+        Console.WriteLine("✅ Produtos já existem no banco. Ignorando importação.");
+    }
+}
+
 
 // 🚀 Pipeline HTTP
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
