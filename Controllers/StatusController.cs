@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using e_commerce.Data;
+using CSharpAssistant.API.Data;
 
-namespace e_commerce.Controllers
+namespace CSharpAssistant.API.Models
+
 {
     [ApiController]
     [Route("api/[controller]")]

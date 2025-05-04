@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
-namespace e_commerce.Models
+namespace CSharpAssistant.API.Models
+
 {
     public class Order
     {

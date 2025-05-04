@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Diagnostics;
 
-namespace CSharpAssistant.API.Controllers
+namespace CSharpAssistant.API.Models
 {
     [Route("api/code")]
     [ApiController]

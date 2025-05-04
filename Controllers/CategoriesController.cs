@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+
+
+
+
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Models;
 
+namespace CSharpAssistant.API.Models
 
-
-
-using e_commerce.Data;
-using e_commerce.Models;
-
-namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

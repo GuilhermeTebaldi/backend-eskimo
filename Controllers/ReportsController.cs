@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using e_commerce.Data;
-using e_commerce.Models;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+namespace CSharpAssistant.API.Models
 
-namespace e_commerce.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

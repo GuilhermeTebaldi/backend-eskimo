@@ -3,10 +3,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using e_commerce.Models;
+using CSharpAssistant.API.Models;
 
 
-namespace e_commerce.Services
+namespace CSharpAssistant.API.Services
 {
     public class TokenService
     {

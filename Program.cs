@@ -6,11 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.ComponentModel.DataAnnotations.Schema;
 using QuestPDF.Infrastructure;
-
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using e_commerce.Data;
-using e_commerce.Services;
+
+using CSharpAssistant.API.Scripts;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,12 +74,15 @@ builder.Services.AddSwaggerGen(c =>
 
 // 🗄️ Banco de dados PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+    options.EnableSensitiveDataLogging();
+});
 
-// 🧩 Registro do ProductService
+// 🧩 Registro de serviços
 builder.Services.AddScoped<ProductService>();
 
-// 🌐 CORS liberado para localhost e sites na Vercel
+// 🌐 CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -93,7 +97,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔐 HTTPS (Opcional)
+// 🔐 HTTPS (opcional)
 const int HttpPort = 8080;
 const int HttpsPort = 8443;
 const string CertPath = "/https/aspnetapp.pfx";
@@ -111,9 +115,11 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 var app = builder.Build();
 
-// 🌟 Configurar licença do QuestPDF
+// 🌟 QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
+// ✅ Executa script de importação de produtos (se existir JSON)
+ImportProductsFromJson.Run(app);
 
 // 🚀 Pipeline HTTP
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -132,16 +138,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// 🌟 Nova rota para monitoramento do servidor
-// app.MapGet("/ping", () => Results.Ok("pong"))
-   // .WithName("Ping")
-   // WithTags("Monitoramento");
-
-// 🌐 Rota padrão
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
-
-// 🌟 Nova rota para monitoramento do servidor (aceita GET, POST, HEAD, OPTIONS)
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
 
 app.Run();
-

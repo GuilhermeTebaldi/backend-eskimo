@@ -1,8 +1,8 @@
-using e_commerce.Data;
-using e_commerce.DTOs;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.DTOs;
 using Microsoft.EntityFrameworkCore;
 
-namespace e_commerce.Services
+namespace CSharpAssistant.API.Services
 {
     public class ProductService
     {

@@ -1,7 +1,8 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace e_commerce.Models
+namespace CSharpAssistant.API.Models
+
 {
     public class Setting
     {

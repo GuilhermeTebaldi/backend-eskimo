@@ -1,6 +1,6 @@
 using BCrypt.Net;
 
-namespace e_commerce.Helpers
+namespace CSharpAssistant.API.Helpers
 {
     public static class PasswordHasher
     {
