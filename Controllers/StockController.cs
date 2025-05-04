@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
 
 namespace CSharpAssistant.API.Controllers
 {
@@ -52,7 +53,7 @@ namespace CSharpAssistant.API.Controllers
                 }
                 else
                 {
-                    _context.StoreStocks.Add(new Models.StoreStock
+                    _context.StoreStocks.Add(new StoreStock
                     {
                         ProductId = productId,
                         Store = store.ToLower(),
@@ -67,7 +68,7 @@ namespace CSharpAssistant.API.Controllers
                 {
                     if (visibility == null)
                     {
-                        _context.StoreProductVisibilities.Add(new Models.StoreProductVisibility
+                        _context.StoreProductVisibilities.Add(new StoreProductVisibility
                         {
                             ProductId = productId,
                             Store = store.ToLower()
