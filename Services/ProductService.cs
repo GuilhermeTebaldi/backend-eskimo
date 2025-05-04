@@ -26,7 +26,7 @@ namespace CSharpAssistant.API.Services
             if (!string.IsNullOrEmpty(store))
             {
                 query = query.Where(p =>
-                    p.Visibilities.Any(v => v.Store == store && v.IsVisible) &&
+               
                     p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0)
                 );
             }
