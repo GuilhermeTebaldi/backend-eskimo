@@ -90,27 +90,11 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:5173",
             "https://admin-panel-eskimo.vercel.app",
-            "https://eskimosites.vercel.app"
+            "https://site-eskimo.vercel.app"
         )
         .AllowAnyMethod()
         .AllowAnyHeader();
     });
-});
-
-// 🔐 HTTPS (opcional)
-const int HttpPort = 8080;
-const int HttpsPort = 8443;
-const string CertPath = "/https/aspnetapp.pfx";
-const string CertPassword = "MinhaSenhaForte";
-
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ListenAnyIP(HttpPort);
-    if (File.Exists(CertPath))
-    {
-        serverOptions.ListenAnyIP(HttpsPort, listenOptions =>
-            listenOptions.UseHttps(CertPath, CertPassword));
-    }
 });
 
 var app = builder.Build();
@@ -118,23 +102,19 @@ var app = builder.Build();
 // 🌟 QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ✅ Executa script de importação de produtos (se existir JSON)
+// ✅ FORÇA LIMPAR o banco e importar tudo de novo
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // Só importa se não houver produtos ainda
-    if (!db.Products.Any())
-    {
-        Console.WriteLine("📦 Nenhum produto encontrado. Iniciando importação...");
-        ImportProductsFromJson.Run(app);
-    }
-    else
-    {
-        Console.WriteLine("✅ Produtos já existem no banco. Ignorando importação.");
-    }
-}
+    Console.WriteLine("⚠️ Limpando produtos e estoques...");
+    db.StoreStocks.RemoveRange(db.StoreStocks);
+    db.Products.RemoveRange(db.Products);
+    db.SaveChanges();
 
+    Console.WriteLine("📦 Reimportando produtos...");
+    ImportProductsFromJson.Run(app);
+}
 
 // 🚀 Pipeline HTTP
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -153,6 +133,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Rotas extras
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
 
