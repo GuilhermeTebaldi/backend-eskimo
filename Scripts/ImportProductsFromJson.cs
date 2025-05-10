@@ -12,6 +12,8 @@ public static class ImportProductsFromJson
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        Console.WriteLine($"🔗 Conectando ao banco: {db.Database.GetDbConnection().ConnectionString}");
+
         var path = Path.Combine(Directory.GetCurrentDirectory(), "Scripts", "produtos_backup.json");
 
         if (!File.Exists(path))
@@ -34,14 +36,12 @@ public static class ImportProductsFromJson
             if (db.Products.Any(x => x.Name == p.name))
                 continue;
 
-            // ⚠️ Validação de categoria
             if (!db.Categories.Any(c => c.Id == p.categoryId))
             {
                 Console.WriteLine($"❌ Categoria inválida: {p.categoryId}, ignorando produto: {p.name}");
                 continue;
             }
 
-            // ⚠️ Validação de subcategoria
             if (p.subcategoryId != null && !db.Subcategories.Any(s => s.Id == p.subcategoryId))
             {
                 Console.WriteLine($"❌ Subcategoria inválida: {p.subcategoryId}, ignorando produto: {p.name}");
@@ -59,7 +59,7 @@ public static class ImportProductsFromJson
             };
 
             db.Products.Add(product);
-            db.SaveChanges(); // salvar para gerar ID
+            db.SaveChanges();
 
             foreach (var store in new[] { "Efapi", "Palmital", "Passo dos Fortes" })
             {

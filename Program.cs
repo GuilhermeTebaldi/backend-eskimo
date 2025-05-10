@@ -15,7 +15,7 @@ using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔐 JWT Authentication
+// 🔐 Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -35,11 +35,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 
-// 📦 Controllers + Swagger
+// 📦 Controllers + JSON
 builder.Services.AddControllers()
     .AddJsonOptions(x =>
         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
+// 🧩 Serviços
+builder.Services.AddScoped<ProductService>();
+
+// 📚 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -79,30 +83,27 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.EnableSensitiveDataLogging();
 });
 
-// 🧩 Registro de serviços
-builder.Services.AddScoped<ProductService>();
-
-// 🌐 CORS
+// 🌐 CORS (liberar acesso ao site público correto)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:5173",
-            "https://admin-panel-eskimo.vercel.app",
-            "https://site-eskimo.vercel.app"
+            "https://eskimosites.vercel.app",            // ✅ DOMÍNIO REAL DO SITE PÚBLICO
+            "https://admin-panel-eskimo.vercel.app"       // ✅ DOMÍNIO DO PAINEL ADMIN
         )
-        .AllowAnyMethod()
-        .AllowAnyHeader();
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
+
 var app = builder.Build();
 
-// 🌟 QuestPDF
+// 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ✅ FORÇA LIMPAR o banco e importar tudo de novo
+// ⚠️ Importação de produtos (apenas para reset e testes)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -116,7 +117,7 @@ using (var scope = app.Services.CreateScope())
     ImportProductsFromJson.Run(app);
 }
 
-// 🚀 Pipeline HTTP
+// 🚀 Middlewares
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -128,12 +129,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseRouting();
-app.UseCors("AllowFrontend");
+app.UseCors("AllowFrontend");   // ✅ TEM QUE VIR ANTES DA AUTENTICAÇÃO
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Rotas extras
+
+// 🧪 Rotas simples
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
 
