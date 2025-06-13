@@ -14,7 +14,7 @@ public static class ImportProductsFromJson
 
         Console.WriteLine($"🔗 Conectando ao banco: {db.Database.GetDbConnection().ConnectionString}");
 
-        var path = Path.Combine(Directory.GetCurrentDirectory(), "Data", "produtos_backup.json");
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "Scripts", "produtos_backup.json");
 
 
         if (!File.Exists(path))
