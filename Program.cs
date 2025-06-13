@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer; 
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -97,15 +97,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-
 var app = builder.Build();
 
 // 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
 // ✅ Executar importação apenas uma vez, sem deletar o banco inteiro
-ImportProductsFromJson.Run(app);
-
+// Desativado temporariamente para evitar queda de conexão na Render
+// ImportProductsFromJson.Run(app);
 
 // 🚀 Middlewares
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -124,9 +123,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-
 // 🧪 Rotas simples
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
+
+// 🧪 Endpoint de debug para rodar importação manual
+app.MapPost("/run-importer", async (AppDbContext db) =>
+{
+    try
+    {
+        Console.WriteLine("📥 Executando importação manual via /run-importer");
+        await Task.Run(() => ImportProductsFromJson.Run(app));
+        return Results.Ok("✅ Importação realizada com sucesso.");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem("Erro ao importar produtos: " + ex.Message);
+    }
+});
 
 app.Run();
