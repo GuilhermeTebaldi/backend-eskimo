@@ -103,19 +103,9 @@ var app = builder.Build();
 // 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ⚠️ Importação de produtos (apenas para reset e testes)
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+// ✅ Executar importação apenas uma vez, sem deletar o banco inteiro
+ImportProductsFromJson.Run(app);
 
-    Console.WriteLine("⚠️ Limpando produtos e estoques...");
-    db.StoreStocks.RemoveRange(db.StoreStocks);
-    db.Products.RemoveRange(db.Products);
-    db.SaveChanges();
-
-    Console.WriteLine("📦 Reimportando produtos...");
-    ImportProductsFromJson.Run(app);
-}
 
 // 🚀 Middlewares
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
