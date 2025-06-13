@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using QuestPDF.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO;
 
 using CSharpAssistant.API.Scripts;
 using CSharpAssistant.API.Data;
@@ -105,6 +106,13 @@ QuestPDF.Settings.License = LicenseType.Community;
 // ✅ Executar importação apenas uma vez, sem deletar o banco inteiro
 // Desativado temporariamente para evitar queda de conexão na Render
 // ImportProductsFromJson.Run(app);
+
+// 🧪 Testar existência dos arquivos no ambiente Render
+Console.WriteLine("🧪 Arquivos na pasta atual:");
+foreach (var f in Directory.GetFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories))
+{
+    Console.WriteLine("📄 " + f);
+}
 
 // 🚀 Middlewares
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
