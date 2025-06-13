@@ -145,9 +145,12 @@ app.MapPost("/run-importer", async (AppDbContext db) =>
         return Results.Ok("✅ Importação realizada com sucesso.");
     }
     catch (Exception ex)
-    {
-        return Results.Problem("Erro ao importar produtos: " + ex.Message);
-    }
+{
+    Console.WriteLine("❌ Erro completo:");
+    Console.WriteLine(ex.ToString());
+    return Results.Problem("Erro ao importar produtos: " + ex.Message);
+}
+
 });
 
 app.Run();
