@@ -1,10 +1,9 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer; 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.ComponentModel.DataAnnotations.Schema;
 using QuestPDF.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -16,21 +15,7 @@ using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🌐 CORS - deve vir ANTES da autenticação
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "https://admin-panel-eskimo.vercel.app",
-            "https://eskimosites.vercel.app"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
-});
-
-// 🔐 Autenticação JWT
+// ✅ JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -50,15 +35,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 
-// 📦 Controllers + JSON
+// ✅ Controllers + JSON
 builder.Services.AddControllers()
     .AddJsonOptions(x =>
         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
-// 🧩 Serviços
+// ✅ Serviços
 builder.Services.AddScoped<ProductService>();
 
-// 📚 Swagger
+// ✅ Swagger com Bearer JWT
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -91,26 +76,43 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 🗄️ Banco de dados PostgreSQL
+// ✅ Banco de dados PostgreSQL (Render)
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
     options.EnableSensitiveDataLogging();
 });
 
+// ✅ CORS para Vercel (Admin + Site público)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "https://eskimosites.vercel.app",
+            "https://admin-panel-eskimo.vercel.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
-// 📄 Licença QuestPDF
+// ✅ Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// 🧪 Testar existência dos arquivos no ambiente Render
-Console.WriteLine("🧪 Arquivos na pasta atual:");
+// ✅ Importador manual — desligado no startup para não cair a conexão
+// ImportProductsFromJson.Run(app); 
+
+// ✅ Debug: listar arquivos do container Render
+Console.WriteLine("🧪 Arquivos no ambiente Render:");
 foreach (var f in Directory.GetFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories))
 {
     Console.WriteLine("📄 " + f);
 }
 
-// 🚀 Middlewares
+// ✅ Middlewares: ORDEM CORRETA!
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -122,16 +124,16 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseRouting();
-app.UseCors("AllowFrontend");   // ✅ ANTES da autenticação
+app.UseCors("AllowFrontend"); // ✅ ANTES do Auth
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// 🧪 Rotas simples
+// ✅ Rotas teste
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
 
-// 🧪 Endpoint de debug para rodar importação manual
+// ✅ Endpoint para rodar importador manualmente
 app.MapPost("/run-importer", async (AppDbContext db) =>
 {
     try
