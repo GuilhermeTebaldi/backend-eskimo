@@ -16,6 +16,20 @@ using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🌐 CORS - deve vir ANTES da autenticação
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "https://admin-panel-eskimo.vercel.app",
+            "https://eskimosites.vercel.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
 // 🔐 Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -84,28 +98,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.EnableSensitiveDataLogging();
 });
 
-// 🌐 CORS (liberar acesso ao site público correto)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "https://eskimosites.vercel.app",            // ✅ DOMÍNIO REAL DO SITE PÚBLICO
-            "https://admin-panel-eskimo.vercel.app"       // ✅ DOMÍNIO DO PAINEL ADMIN
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
-});
-
 var app = builder.Build();
 
 // 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
-
-// Executar importação apenas uma vez, sem deletar o banco inteiro
-// Desativado temporariamente para evitar queda de conexão na Render
-// ImportProductsFromJson.Run(app); 
 
 // 🧪 Testar existência dos arquivos no ambiente Render
 Console.WriteLine("🧪 Arquivos na pasta atual:");
@@ -126,7 +122,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseRouting();
-app.UseCors("AllowFrontend");   // ✅ TEM QUE VIR ANTES DA AUTENTICAÇÃO
+app.UseCors("AllowFrontend");   // ✅ ANTES da autenticação
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -145,12 +141,11 @@ app.MapPost("/run-importer", async (AppDbContext db) =>
         return Results.Ok("✅ Importação realizada com sucesso.");
     }
     catch (Exception ex)
-{
-    Console.WriteLine("❌ Erro completo:");
-    Console.WriteLine(ex.ToString());
-    return Results.Problem("Erro ao importar produtos: " + ex.Message);
-}
-
+    {
+        Console.WriteLine("❌ Erro completo:");
+        Console.WriteLine(ex.ToString());
+        return Results.Problem("Erro ao importar produtos: " + ex.Message);
+    }
 });
 
 app.Run();
