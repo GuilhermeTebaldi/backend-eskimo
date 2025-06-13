@@ -103,9 +103,9 @@ var app = builder.Build();
 // 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ✅ Executar importação apenas uma vez, sem deletar o banco inteiro
+// Executar importação apenas uma vez, sem deletar o banco inteiro
 // Desativado temporariamente para evitar queda de conexão na Render
-ImportProductsFromJson.Run(app);
+// ImportProductsFromJson.Run(app); 
 
 // 🧪 Testar existência dos arquivos no ambiente Render
 Console.WriteLine("🧪 Arquivos na pasta atual:");
