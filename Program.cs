@@ -15,6 +15,11 @@ using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+// ✅ Configurações do Npgsql para PostgreSQL 14+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+
 // ✅ JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -96,6 +101,10 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod();
     });
 });
+
+// ✅ LOG da ConnectionString
+Console.WriteLine("🔑 ConnectionString lida:");
+Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
 
 var app = builder.Build();
 

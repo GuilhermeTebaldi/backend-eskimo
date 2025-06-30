@@ -52,16 +52,37 @@ namespace CSharpAssistant.API.Controllers
             }
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-            if (user == null || !PasswordHasher.Verify(loginDto.Password, user.PasswordHash))
-                return Unauthorized("Credenciais inválidas.");
+       [HttpPost("login")]
+public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
+{
+    Console.WriteLine("🔐 Tentativa de login com:");
+    Console.WriteLine($"Email: {loginDto.Email}");
+    Console.WriteLine($"Password: {loginDto.Password}");
 
-            var token = _tokenService.GenerateToken(user);
+    Console.WriteLine("🔎 Consultando usuário no banco...");
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
-            return Ok(new { token });
-        }
+    if (user == null)
+    {
+        Console.WriteLine("❌ Usuário não encontrado no banco.");
+        return Unauthorized("Credenciais inválidas.");
+    }
+    else
+    {
+        Console.WriteLine("✅ Usuário encontrado: " + user.Email);
+    }
+
+    if (!PasswordHasher.Verify(loginDto.Password, user.PasswordHash))
+    {
+        Console.WriteLine("❌ Senha incorreta.");
+        return Unauthorized("Credenciais inválidas.");
+    }
+
+    var token = _tokenService.GenerateToken(user);
+    Console.WriteLine("✅ Token gerado com sucesso.");
+
+    return Ok(new { token });
+}
+
     }
 }
