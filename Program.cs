@@ -15,12 +15,11 @@ using CSharpAssistant.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// ✅ Configurações do Npgsql para PostgreSQL 14+
+// 🔧 Configurações Npgsql para PostgreSQL 14+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
 
-// ✅ JWT
+// 🔐 JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -40,15 +39,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 
-// ✅ Controllers + JSON
+// 📦 Controllers + JSON
 builder.Services.AddControllers()
     .AddJsonOptions(x =>
         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
-// ✅ Serviços
+// 🧩 Serviços
 builder.Services.AddScoped<ProductService>();
 
-// ✅ Swagger com Bearer JWT
+// 📚 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -81,14 +80,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ✅ Banco de dados PostgreSQL (Render)
+// 🗄️ Banco de dados PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
     options.EnableSensitiveDataLogging();
 });
 
-// ✅ CORS para Vercel (Admin + Site público)
+// 🌐 CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -102,26 +101,23 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ✅ LOG da ConnectionString
-Console.WriteLine("🔑 ConnectionString lida:");
+// 🔎 Log ConnectionString
+Console.WriteLine("🔑 ConnectionString atual:");
 Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
 
 var app = builder.Build();
 
-// ✅ Licença QuestPDF
+// 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ✅ Importador manual — desligado no startup para não cair a conexão
-// ImportProductsFromJson.Run(app); 
-
-// ✅ Debug: listar arquivos do container Render
+// ✅ Debug: listar arquivos no container Render
 Console.WriteLine("🧪 Arquivos no ambiente Render:");
 foreach (var f in Directory.GetFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories))
 {
     Console.WriteLine("📄 " + f);
 }
 
-// ✅ Middlewares: ORDEM CORRETA!
+// 🚀 Middlewares
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -133,16 +129,16 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseRouting();
-app.UseCors("AllowFrontend"); // ✅ ANTES do Auth
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// ✅ Rotas teste
+// 🧪 Rotas teste
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
 app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
 
-// ✅ Endpoint para rodar importador manualmente
+// 🛠️ Endpoint para rodar importador manualmente
 app.MapPost("/run-importer", async (AppDbContext db) =>
 {
     try
@@ -158,5 +154,8 @@ app.MapPost("/run-importer", async (AppDbContext db) =>
         return Results.Problem("Erro ao importar produtos: " + ex.Message);
     }
 });
+
+// ✅ Log final ao iniciar
+Console.WriteLine("✅ API iniciada e pronta para receber requisições.");
 
 app.Run();
