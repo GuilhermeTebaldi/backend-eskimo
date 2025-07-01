@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "tyVO95OS53A=",
+  "success": true,
+  "projectFilePath": "/Users/admin/Documents/e-commerce/CSharpAssistant.API/TestHash/TestHash.csproj",
+  "expectedPackageFiles": [
+    "/Users/admin/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
