@@ -21,53 +21,64 @@ namespace CSharpAssistant.API.Models
         }
 
         // 🔴 POST: Criar novo pedido
-        [HttpPost]
-        public async Task<IActionResult> CreateOrder(OrderDTO dto)
+       [HttpPost]
+public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO dto)
+{
+    if (!ModelState.IsValid)
+    {
+        return BadRequest(ModelState);
+    }
+
+    if (dto.Items == null || !dto.Items.Any())
+    {
+        return BadRequest(new { message = "O pedido deve conter pelo menos um item." });
+    }
+
+    var order = new Order
+    {
+        CustomerName = dto.CustomerName,
+        DeliveryType = dto.DeliveryType,
+        Address = dto.Address,
+        Street = dto.Street,
+        Number = dto.Number,
+        Complement = dto.Complement,
+        Store = dto.Store,
+        Total = dto.Total,
+        DeliveryFee = dto.DeliveryFee,
+        Status = "pendente",
+        PhoneNumber = dto.PhoneNumber,
+        Items = dto.Items.Select(i => new OrderItem
         {
-            var order = new Order
-            {
-                CustomerName = dto.CustomerName,
-                DeliveryType = dto.DeliveryType,
-                Address = dto.Address,
-                Street = dto.Street,
-                Number = dto.Number,
-                Complement = dto.Complement,
-                Store = dto.Store,
-                Total = dto.Total,
-                DeliveryFee = dto.DeliveryFee,
-                Status = "pendente",
-                PhoneNumber = dto.PhoneNumber,
-                Items = dto.Items.Select(i => new OrderItem
-                {
-                    ProductId = i.ProductId,
-                    Name = i.Name,
-                    Price = i.Price,
-                    Quantity = i.Quantity,
-                    ImageUrl = i.ImageUrl,
-                    Store = dto.Store
-                }).ToList()
-            };
+            ProductId = i.ProductId,
+            Name = i.Name,
+            Price = i.Price,
+            Quantity = i.Quantity,
+            ImageUrl = i.ImageUrl,
+            Store = dto.Store
+        }).ToList()
+    };
 
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
+    _context.Orders.Add(order);
+    await _context.SaveChangesAsync();
 
-            // ✅ Descontar estoque da loja
-            foreach (var item in order.Items)
-            {
-                var stock = await _context.StoreStocks
-                    .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
+    // ✅ Descontar estoque da loja
+    foreach (var item in order.Items)
+    {
+        var stock = await _context.StoreStocks
+            .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
 
-                if (stock != null)
-                {
-                    stock.Quantity -= item.Quantity;
-                    if (stock.Quantity < 0) stock.Quantity = 0;
-                }
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
+        if (stock != null)
+        {
+            stock.Quantity -= item.Quantity;
+            if (stock.Quantity < 0) stock.Quantity = 0;
         }
+    }
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
+}
+
 
         // 🟡 GET: Listar todos os pedidos
         [HttpGet]
