@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace CSharpAssistant.API.Models
-
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -21,64 +20,75 @@ namespace CSharpAssistant.API.Models
         }
 
         // 🔴 POST: Criar novo pedido
-       [HttpPost]
-public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO dto)
-{
-    if (!ModelState.IsValid)
-    {
-        return BadRequest(ModelState);
-    }
-
-    if (dto.Items == null || !dto.Items.Any())
-    {
-        return BadRequest(new { message = "O pedido deve conter pelo menos um item." });
-    }
-
-    var order = new Order
-    {
-        CustomerName = dto.CustomerName,
-        DeliveryType = dto.DeliveryType,
-        Address = dto.Address,
-        Street = dto.Street,
-        Number = dto.Number,
-        Complement = dto.Complement,
-        Store = dto.Store,
-        Total = dto.Total,
-        DeliveryFee = dto.DeliveryFee,
-        Status = "pendente",
-        PhoneNumber = dto.PhoneNumber,
-        Items = dto.Items.Select(i => new OrderItem
+        [HttpPost]
+        public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO dto)
         {
-            ProductId = i.ProductId,
-            Name = i.Name,
-            Price = i.Price,
-            Quantity = i.Quantity,
-            ImageUrl = i.ImageUrl,
-            Store = dto.Store
-        }).ToList()
-    };
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-    _context.Orders.Add(order);
-    await _context.SaveChangesAsync();
+            if (dto.Items == null || !dto.Items.Any())
+            {
+                return BadRequest(new { message = "O pedido deve conter pelo menos um item." });
+            }
 
-    // ✅ Descontar estoque da loja
-    foreach (var item in order.Items)
-    {
-        var stock = await _context.StoreStocks
-            .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
+            // ✅ Validação condicional para pedidos de entrega
+            if (dto.DeliveryType == "entregar")
+            {
+                if (string.IsNullOrWhiteSpace(dto.Address) ||
+                    string.IsNullOrWhiteSpace(dto.Street) ||
+                    string.IsNullOrWhiteSpace(dto.Number) ||
+                    string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                {
+                    return BadRequest(new { message = "Endereço completo e telefone são obrigatórios para entrega." });
+                }
+            }
 
-        if (stock != null)
-        {
-            stock.Quantity -= item.Quantity;
-            if (stock.Quantity < 0) stock.Quantity = 0;
+            var order = new Order
+            {
+                CustomerName = dto.CustomerName,
+                DeliveryType = dto.DeliveryType,
+                Address = dto.Address,
+                Street = dto.Street,
+                Number = dto.Number,
+                Complement = dto.Complement,
+                Store = dto.Store,
+                Total = dto.Total,
+                DeliveryFee = dto.DeliveryFee,
+                Status = "pendente",
+                PhoneNumber = dto.PhoneNumber,
+                Items = dto.Items.Select(i => new OrderItem
+                {
+                    ProductId = i.ProductId,
+                    Name = i.Name,
+                    Price = i.Price,
+                    Quantity = i.Quantity,
+                    ImageUrl = i.ImageUrl,
+                    Store = dto.Store
+                }).ToList()
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            // ✅ Descontar estoque da loja
+            foreach (var item in order.Items)
+            {
+                var stock = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
+
+                if (stock != null)
+                {
+                    stock.Quantity -= item.Quantity;
+                    if (stock.Quantity < 0) stock.Quantity = 0;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
         }
-    }
-
-    await _context.SaveChangesAsync();
-
-    return Ok(new { id = order.Id, message = "Pedido salvo com sucesso!" });
-}
-
 
         // 🟡 GET: Listar todos os pedidos
         [HttpGet]
