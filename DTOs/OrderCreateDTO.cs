@@ -6,12 +6,12 @@ namespace CSharpAssistant.API.DTOs
     {
         public string Store { get; set; }
         public string CustomerName { get; set; }
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
         public string DeliveryType { get; set; }
-        public string Address { get; set; }
-        public string Street { get; set; }
-        public string Number { get; set; }
-        public string Complement { get; set; }
+        public string? Address { get; set; }
+        public string? Street { get; set; }
+        public string? Number { get; set; }
+        public string? Complement { get; set; }
         public decimal Total { get; set; }
         public decimal DeliveryFee { get; set; }
 
