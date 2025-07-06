@@ -93,6 +93,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
+            "https://eskimosites.vercel.app/",
             "https://eskimosites.vercel.app",
             "https://admin-panel-eskimo.vercel.app"
         )
