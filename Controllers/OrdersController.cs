@@ -44,6 +44,17 @@ namespace CSharpAssistant.API.Models
                     return BadRequest(new { message = "Endereço completo e telefone são obrigatórios para entrega." });
                 }
             }
+// 🔒 Validação de estoque antes de criar o pedido
+foreach (var item in dto.Items)
+{
+    var stock = await _context.StoreStocks
+        .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == dto.Store);
+
+    if (stock == null || stock.Quantity < item.Quantity)
+    {
+        return BadRequest(new { message = $"Estoque insuficiente para o produto {item.Name}. Quantidade disponível: {stock?.Quantity ?? 0}" });
+    }
+}
 
             var order = new Order
             {
