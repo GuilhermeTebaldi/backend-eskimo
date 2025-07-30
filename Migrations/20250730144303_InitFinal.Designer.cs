@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ecommerce.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250504110137_InitFinal")]
+    [Migration("20250730144303_InitFinal")]
     partial class InitFinal
     {
         /// <inheritdoc />
@@ -181,13 +181,13 @@ namespace ecommerce.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal>("DeliveryRate")
                         .HasColumnType("numeric");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
