@@ -107,6 +107,13 @@ Console.WriteLine("🔑 ConnectionString atual:");
 Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
 
 var app = builder.Build();
+// 🚀 Cria as tabelas no banco se não existirem
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 
 // 📄 Licença QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
