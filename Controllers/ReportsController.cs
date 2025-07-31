@@ -25,25 +25,25 @@ namespace CSharpAssistant.API.Models
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
-            // 🔥 Normaliza a URL
-    var storeKey = store.ToLower().Replace("-", "").Replace(" ", "");
+            // 🔥 Normaliza a URL recebida
+            var storeKey = store.ToLower().Trim().Replace("-", "").Replace(" ", "");
 
-    string storeName;
-    if (storeKey == "passodosfortes" || storeKey == "passo") storeName = "passo";
-    else if (storeKey == "efapi") storeName = "efapi";
-    else if (storeKey == "palmital") storeName = "palmital";
-    else storeName = storeKey;
+            // 🔥 Converte para a chave esperada no banco
+            string storeName;
+            if (storeKey.Contains("passo")) storeName = "passo";
+            else if (storeKey.Contains("efapi")) storeName = "efapi";
+            else if (storeKey.Contains("palmital")) storeName = "palmital";
+            else storeName = storeKey;
 
-            // 🔥 Garante comparação case-insensitive no banco
-           var pedidos = await _context.Orders
-        .Include(p => p.Items)
-        .Where(p => p.Store.ToLower() == storeName)
-        .OrderByDescending(p => p.Id)
-        .ToListAsync();
+            // 🔥 Busca pedidos aceitando maiúsculas/minúsculas e variações
+            var pedidos = await _context.Orders
+                .Include(p => p.Items)
+                .Where(p => p.Store.ToLower().Contains(storeName)) // ✅ Aceita "Efapi", "efapi ", "PALMITAL"
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
 
-    if (!pedidos.Any())
-        return NotFound(new { message = "Nenhum pedido encontrado para esta loja." });
-
+            if (!pedidos.Any())
+                return NotFound(new { message = $"Nenhum pedido encontrado para a loja {storeName}." });
 
             var totalGeral = pedidos.Sum(p => p.Total);
             var pdfStream = new MemoryStream();
@@ -84,7 +84,7 @@ namespace CSharpAssistant.API.Models
             .GeneratePdf(pdfStream);
 
             pdfStream.Position = 0;
-            var fileName = $"relatorio_{storeKey}.pdf";
+            var fileName = $"relatorio_{storeName}.pdf";
             return File(pdfStream, "application/pdf", fileName);
         }
     }
