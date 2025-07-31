@@ -8,8 +8,8 @@ using CSharpAssistant.API.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-namespace CSharpAssistant.API.Models
 
+namespace CSharpAssistant.API.Models
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -25,15 +25,19 @@ namespace CSharpAssistant.API.Models
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
-            // Corrigir nome da loja se necessário
-            store = store.ToLower().Replace("-", "").Replace(" ", "");
-            if (store == "passodosfortes") store = "Passo dos Fortes";
-            else if (store == "efapi") store = "Efapi";
-            else if (store == "palmital") store = "Palmital";
+            // 🔥 Normaliza a loja recebida na URL
+            var storeKey = store.ToLower().Replace("-", "").Replace(" ", "");
 
+            string storeName;
+            if (storeKey == "passodosfortes") storeName = "Passo dos Fortes";
+            else if (storeKey == "efapi") storeName = "efapi";
+            else if (storeKey == "palmital") storeName = "palmital";
+            else storeName = store;
+
+            // 🔥 Garante comparação case-insensitive no banco
             var pedidos = await _context.Orders
                 .Include(p => p.Items)
-                .Where(p => p.Store == store)
+                .Where(p => p.Store.ToLower() == storeName.ToLower())
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();
 
@@ -49,7 +53,7 @@ namespace CSharpAssistant.API.Models
                 {
                     page.Margin(30);
                     page.Header()
-                        .Text($"Relatório de Pedidos - Loja {store}")
+                        .Text($"Relatório de Pedidos - Loja {storeName}")
                         .SemiBold().FontSize(18).FontColor(Colors.Blue.Medium);
 
                     page.Content()
@@ -79,7 +83,7 @@ namespace CSharpAssistant.API.Models
             .GeneratePdf(pdfStream);
 
             pdfStream.Position = 0;
-            var fileName = $"relatorio_{store.ToLower().Replace(" ", "_")}.pdf";
+            var fileName = $"relatorio_{storeKey}.pdf";
             return File(pdfStream, "application/pdf", fileName);
         }
     }
