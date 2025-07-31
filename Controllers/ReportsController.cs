@@ -25,24 +25,25 @@ namespace CSharpAssistant.API.Models
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
-            // 🔥 Normaliza a loja recebida na URL
-            var storeKey = store.ToLower().Replace("-", "").Replace(" ", "");
+            // 🔥 Normaliza a URL
+    var storeKey = store.ToLower().Replace("-", "").Replace(" ", "");
 
-            string storeName;
-            if (storeKey == "passodosfortes") storeName = "Passo dos Fortes";
-            else if (storeKey == "efapi") storeName = "efapi";
-            else if (storeKey == "palmital") storeName = "palmital";
-            else storeName = store;
+    string storeName;
+    if (storeKey == "passodosfortes" || storeKey == "passo") storeName = "passo";
+    else if (storeKey == "efapi") storeName = "efapi";
+    else if (storeKey == "palmital") storeName = "palmital";
+    else storeName = storeKey;
 
             // 🔥 Garante comparação case-insensitive no banco
-            var pedidos = await _context.Orders
-                .Include(p => p.Items)
-                .Where(p => p.Store.ToLower() == storeName.ToLower())
-                .OrderByDescending(p => p.Id)
-                .ToListAsync();
+           var pedidos = await _context.Orders
+        .Include(p => p.Items)
+        .Where(p => p.Store.ToLower() == storeName)
+        .OrderByDescending(p => p.Id)
+        .ToListAsync();
 
-            if (!pedidos.Any())
-                return NotFound(new { message = "Nenhum pedido encontrado para esta loja." });
+    if (!pedidos.Any())
+        return NotFound(new { message = "Nenhum pedido encontrado para esta loja." });
+
 
             var totalGeral = pedidos.Sum(p => p.Total);
             var pdfStream = new MemoryStream();
