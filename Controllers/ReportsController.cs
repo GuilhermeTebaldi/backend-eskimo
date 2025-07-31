@@ -28,17 +28,17 @@ namespace CSharpAssistant.API.Models
             // 🔥 Normaliza a URL recebida
             var storeKey = store.ToLower().Trim().Replace("-", "").Replace(" ", "");
 
-            // 🔥 Converte para a chave esperada no banco
+            // 🔥 Converte para o nome real usado no banco
             string storeName;
             if (storeKey.Contains("passo")) storeName = "passo";
             else if (storeKey.Contains("efapi")) storeName = "efapi";
             else if (storeKey.Contains("palmital")) storeName = "palmital";
             else storeName = storeKey;
 
-            // 🔥 Busca pedidos aceitando maiúsculas/minúsculas e variações
+            // 🔥 Busca pedidos com comparação case-insensitive
             var pedidos = await _context.Orders
                 .Include(p => p.Items)
-                .Where(p => p.Store.ToLower().Contains(storeName)) // ✅ Aceita "Efapi", "efapi ", "PALMITAL"
+                .Where(p => p.Store.ToLower() == storeName)
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();
 
@@ -54,7 +54,7 @@ namespace CSharpAssistant.API.Models
                 {
                     page.Margin(30);
                     page.Header()
-                        .Text($"Relatório de Pedidos - Loja {storeName}")
+                        .Text($"Relatório de Pedidos - Loja {storeName.ToUpper()}")
                         .SemiBold().FontSize(18).FontColor(Colors.Blue.Medium);
 
                     page.Content()
