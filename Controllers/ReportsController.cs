@@ -25,17 +25,14 @@ namespace CSharpAssistant.API.Models
         [HttpGet("{store}")]
         public async Task<IActionResult> GenerateReport(string store)
         {
-            // 🔥 Normaliza a URL recebida
             var storeKey = store.ToLower().Trim().Replace("-", "").Replace(" ", "");
 
-            // 🔥 Converte para o nome real usado no banco
             string storeName;
             if (storeKey.Contains("passo")) storeName = "passo";
             else if (storeKey.Contains("efapi")) storeName = "efapi";
             else if (storeKey.Contains("palmital")) storeName = "palmital";
             else storeName = storeKey;
 
-            // 🔥 Busca pedidos com comparação case-insensitive
             var pedidos = await _context.Orders
                 .Include(p => p.Items)
                 .Where(p => p.Store.ToLower() == storeName)
@@ -63,11 +60,23 @@ namespace CSharpAssistant.API.Models
                         {
                             foreach (var pedido in pedidos)
                             {
-                                col.Item().BorderBottom(1).Padding(5).Row(row =>
+                                var dataPedido = pedido.CreatedAt.ToLocalTime();
+                                var dataFormatada = dataPedido.ToString("dd/MM/yyyy");
+                                var horaFormatada = dataPedido.ToString("HH:mm");
+
+                                col.Item().BorderBottom(1).Padding(5).Column(innerCol =>
                                 {
-                                    row.RelativeColumn().Text($"Cliente: {pedido.CustomerName}");
-                                    row.RelativeColumn().Text($"Total: R$ {pedido.Total:F2}");
-                                    row.RelativeColumn().Text($"Status: {pedido.Status.ToUpper()}");
+                                    innerCol.Item().Text($"Cliente: {pedido.CustomerName}");
+                                    innerCol.Item().Text($"Data: {dataFormatada}  Horário: {horaFormatada}");
+                                    innerCol.Item().Text($"Total: R$ {pedido.Total:F2}");
+                                    innerCol.Item().Text($"Status: {pedido.Status.ToUpper()}");
+                                    innerCol.Item().PaddingTop(5);
+
+                                    foreach (var item in pedido.Items)
+                                    {
+                                        innerCol.Item().Text($" - {item.Name} (x{item.Quantity})  R$ {(item.Price * item.Quantity):F2}")
+                                            .FontSize(10).FontColor(Colors.Grey.Darken2);
+                                    }
                                 });
                             }
 
