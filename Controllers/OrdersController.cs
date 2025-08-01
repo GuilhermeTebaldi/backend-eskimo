@@ -122,9 +122,10 @@ foreach (var item in dto.Items)
                     order.Total,
                     order.Status,
                     order.PhoneNumber,
-                    order.DeliveryFee,
-                    Items = order.Items.Select(item => new
-                    {
+                   order.DeliveryFee,
+            order.CreatedAt,   // ✅ Adicionado para o frontend usar a data real
+            Items = order.Items.Select(item => new
+            {
                         item.ProductId,
                         item.Name,
                         item.Price,

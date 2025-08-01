@@ -18,6 +18,8 @@ namespace CSharpAssistant.API.Models
 public string? PhoneNumber { get; set; } // WhatsApp do cliente
 public decimal DeliveryFee { get; set; }  // 💸 valor calculado pela distância
 public string? ImageUrl { get; set; }
+public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
 
         public List<OrderItem> Items { get; set; } = new();
     }
