@@ -44,17 +44,18 @@ namespace CSharpAssistant.API.Models
                     return BadRequest(new { message = "Endereço completo e telefone são obrigatórios para entrega." });
                 }
             }
-// 🔒 Validação de estoque antes de criar o pedido
-foreach (var item in dto.Items)
-{
-    var stock = await _context.StoreStocks
-        .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == dto.Store);
 
-    if (stock == null || stock.Quantity < item.Quantity)
-    {
-        return BadRequest(new { message = $"Estoque insuficiente para o produto {item.Name}. Quantidade disponível: {stock?.Quantity ?? 0}" });
-    }
-}
+            // 🔒 Validação de estoque antes de criar o pedido
+            foreach (var item in dto.Items)
+            {
+                var stock = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == dto.Store);
+
+                if (stock == null || stock.Quantity < item.Quantity)
+                {
+                    return BadRequest(new { message = $"Estoque insuficiente para o produto {item.Name}. Quantidade disponível: {stock?.Quantity ?? 0}" });
+                }
+            }
 
             var order = new Order
             {
@@ -122,10 +123,10 @@ foreach (var item in dto.Items)
                     order.Total,
                     order.Status,
                     order.PhoneNumber,
-                   order.DeliveryFee,
-            order.CreatedAt,   // ✅ Adicionado para o frontend usar a data real
-            Items = order.Items.Select(item => new
-            {
+                    order.DeliveryFee,
+                    order.CreatedAt,   // ✅ Data real para o frontend
+                    Items = order.Items.Select(item => new
+                    {
                         item.ProductId,
                         item.Name,
                         item.Price,
@@ -167,7 +168,7 @@ foreach (var item in dto.Items)
             return NoContent();
         }
 
-        // 🔴 DELETE: Excluir pedido
+        // 🔴 DELETE: Excluir pedido individual
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
@@ -183,6 +184,22 @@ foreach (var item in dto.Items)
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // 🔥 NOVO: DELETE TODOS OS PEDIDOS
+        [HttpDelete("clear")]
+        public async Task<IActionResult> ClearOrders()
+        {
+            var allOrders = await _context.Orders.Include(o => o.Items).ToListAsync();
+
+            if (allOrders.Count == 0)
+                return NoContent();
+
+            _context.OrderItems.RemoveRange(allOrders.SelectMany(o => o.Items));
+            _context.Orders.RemoveRange(allOrders);
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Todos os pedidos foram excluídos com sucesso." });
         }
     }
 }
