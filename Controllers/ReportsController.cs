@@ -73,7 +73,7 @@ namespace CSharpAssistant.API.Models
 
                                 foreach (var pedido in grupo)
                                 {
-                                    var dataPedido = pedido.CreatedAt.ToLocalTime();
+                                    var dataPedido = pedido.CreatedAt.ToUniversalTime().AddHours(-3);
                                     var horaFormatada = dataPedido.ToString("HH:mm");
 
                                     col.Item().BorderBottom(1).Padding(5).Column(innerCol =>
