@@ -44,9 +44,12 @@ namespace CSharpAssistant.API.Models
             if (!pedidos.Any())
                 return NotFound(new { message = $"Nenhum pedido encontrado para a loja {storeName}." });
 
+            // 🔒 Filtrar apenas pedidos com data válida
+            var pedidosValidos = pedidos.Where(p => p.CreatedAt > DateTime.MinValue).ToList();
+
             // 🔥 Agrupar pedidos por data (dd/MM/yyyy)
-            var pedidosPorDia = pedidos
-                .GroupBy(p => p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy"))
+            var pedidosPorDia = pedidosValidos
+                .GroupBy(p => p.CreatedAt.ToUniversalTime().AddHours(-3).ToString("dd/MM/yyyy"))
                 .OrderByDescending(g => DateTime.ParseExact(g.Key, "dd/MM/yyyy", null))
                 .ToList();
 
@@ -73,7 +76,10 @@ namespace CSharpAssistant.API.Models
 
                                 foreach (var pedido in grupo)
                                 {
-                                    var dataPedido = pedido.CreatedAt.ToUniversalTime().AddHours(-3);
+                                    var dataPedido = (pedido.CreatedAt > DateTime.MinValue)
+                                        ? pedido.CreatedAt.ToUniversalTime().AddHours(-3)
+                                        : DateTime.Now;
+
                                     var horaFormatada = dataPedido.ToString("HH:mm");
 
                                     col.Item().BorderBottom(1).Padding(5).Column(innerCol =>
@@ -104,7 +110,7 @@ namespace CSharpAssistant.API.Models
 
                     page.Footer()
                         .AlignCenter()
-                        .Text($"Gerado em {System.DateTime.Now:dd/MM/yyyy HH:mm}")
+                        .Text($"Gerado em {System.DateTime.Now.AddHours(-3):dd/MM/yyyy HH:mm}")
                         .FontSize(10).FontColor(Colors.Grey.Medium);
                 });
             })
