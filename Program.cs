@@ -94,6 +94,13 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "https://eskimosites.vercel.app/",
+            
+            
+            // Domínios novos do site
+            "https://eskimochapeco.com.br",
+            "https://www.eskimochapeco.com.br",
+
+            // Domínios antigos/atuais (manter enquanto necessário)
             "https://eskimosites.vercel.app",
             "https://admin-panel-eskimo.vercel.app"
         )
