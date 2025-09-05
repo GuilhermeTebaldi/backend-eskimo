@@ -93,9 +93,6 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-            "https://eskimosites.vercel.app/",
-            
-            
             // Domínios novos do site
             "https://eskimochapeco.com.br",
             "https://www.eskimochapeco.com.br",
