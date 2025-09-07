@@ -99,6 +99,7 @@ builder.Services.AddCors(options =>
             "https://localhost:5173",     // caso rode Vite em https
             "https://127.0.0.1:5173",
             // Domínios novos do site
+            "https://admin.eskimochapeco.com.br",
             "https://eskimochapeco.com.br",
             "https://www.eskimochapeco.com.br",
 
