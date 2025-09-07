@@ -1,3 +1,4 @@
+//CSharpAssistant.API/Data/AppDbContext.cs
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Models;
 
@@ -24,5 +25,18 @@ namespace CSharpAssistant.API.Data
         public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
 
         public DbSet<Setting> Settings { get; set; }
+
+        // ✅ NOVO: Configurações de pagamento por loja (CNPJ/credenciais)
+        public DbSet<PaymentConfig> PaymentConfigs { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // 🔒 Opcional: índice único por Store (uma config por loja)
+            modelBuilder.Entity<PaymentConfig>()
+                .HasIndex(p => p.Store)
+                .IsUnique();
+        }
     }
 }
