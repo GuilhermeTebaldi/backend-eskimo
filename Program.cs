@@ -93,7 +93,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:5173/",
+            
+            "http://localhost:5173",
             // Domínios novos do site
             "https://eskimochapeco.com.br",
             "https://www.eskimochapeco.com.br",
