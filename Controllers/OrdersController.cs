@@ -141,18 +141,25 @@ namespace CSharpAssistant.API.Models
         }
 
         // 🟢 PATCH: Confirmar pagamento
-        [HttpPatch("{id}/confirm")]
-        public async Task<IActionResult> ConfirmOrder(int id)
-        {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-                return NotFound(new { message = "Pedido não encontrado." });
+[HttpPatch("{id}/confirm")]
+public async Task<IActionResult> ConfirmOrder(int id)
+{
+    var order = await _context.Orders.FindAsync(id);
+    if (order == null)
+        return NotFound(new { message = "Pedido não encontrado." });
 
-            order.Status = "pago";
-            await _context.SaveChangesAsync();
+    if (order.Status == "entregue")
+        return BadRequest(new { message = "Pedido já foi entregue." });
 
-            return NoContent();
-        }
+    if (order.Status == "cancelado")
+        return BadRequest(new { message = "Pedido cancelado não pode ser confirmado." });
+
+    order.Status = "pago";
+    await _context.SaveChangesAsync();
+
+    // mantém NoContent para não quebrar o front
+    return NoContent();
+}
 
         // 🟢 PATCH: Marcar como entregue
         [HttpPatch("{id}/deliver")]
@@ -162,11 +169,66 @@ namespace CSharpAssistant.API.Models
             if (order == null)
                 return NotFound(new { message = "Pedido não encontrado." });
 
+            if (order.Status == "cancelado")
+                return BadRequest(new { message = "Pedido cancelado não pode ser entregue." });
+
             order.Status = "entregue";
             await _context.SaveChangesAsync();
 
+            // mantém NoContent para não quebrar o front
             return NoContent();
         }
+// 🛑 PATCH: Cancelar pedido (devolve estoque) — idempotente e seguro
+[HttpPatch("{id}/cancel")]
+public async Task<IActionResult> CancelOrder(int id)
+{
+    var order = await _context.Orders
+        .Include(o => o.Items)
+        .FirstOrDefaultAsync(o => o.Id == id);
+
+    if (order == null)
+        return NotFound(new { message = "Pedido não encontrado." });
+
+    if (order.Status == "entregue")
+        return BadRequest(new { message = "Pedido já entregue não pode ser cancelado." });
+
+    // Idempotência: se já estiver cancelado, não altera estoque de novo
+    if (order.Status == "cancelado")
+        return NoContent();
+
+    // Transação simples pra garantir que ou tudo acontece, ou nada
+    using var tx = await _context.Database.BeginTransactionAsync();
+
+    // 🔁 Devolve estoque por item na loja do pedido
+    foreach (var item in order.Items)
+    {
+        var stock = await _context.StoreStocks
+            .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == order.Store);
+
+        if (stock == null)
+        {
+            stock = new StoreStock
+            {
+                ProductId = item.ProductId,
+                Store = order.Store,
+                Quantity = 0
+            };
+            _context.StoreStocks.Add(stock);
+        }
+
+        stock.Quantity += item.Quantity;
+    }
+
+    // Marca como cancelado
+    order.Status = "cancelado";
+
+    await _context.SaveChangesAsync();
+    await tx.CommitAsync();
+
+    // mantém NoContent para não quebrar o front atual
+    return NoContent();
+}
+
 
         // 🔴 DELETE: Excluir pedido individual
         [HttpDelete("{id}")]

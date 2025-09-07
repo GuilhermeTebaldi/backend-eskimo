@@ -1,0 +1,364 @@
+.
+├── .DS_Store
+├── appsettings.Development.json
+├── appsettings.json
+├── backup_eskimo.sql
+├── backup_novo.dump
+├── backup.sql
+├── bin
+│   └── Debug
+│       └── net8.0
+│           ├── appsettings.Development.json
+│           ├── appsettings.json
+│           ├── BCrypt.Net-Next.dll
+│           ├── cs
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── de
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── e-commerce
+│           ├── e-commerce.deps.json
+│           ├── e-commerce.dll
+│           ├── e-commerce.pdb
+│           ├── e-commerce.runtimeconfig.json
+│           ├── e-commerce.staticwebassets.endpoints.json
+│           ├── es
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── fr
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── Humanizer.dll
+│           ├── it
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── ja
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── ko
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── LatoFont
+│           │   ├── Lato-Black.ttf
+│           │   ├── Lato-BlackItalic.ttf
+│           │   ├── Lato-Bold.ttf
+│           │   ├── Lato-BoldItalic.ttf
+│           │   ├── Lato-ExtraBold.ttf
+│           │   ├── Lato-ExtraBoldItalic.ttf
+│           │   ├── Lato-ExtraLight.ttf
+│           │   ├── Lato-ExtraLightItalic.ttf
+│           │   ├── Lato-Italic.ttf
+│           │   ├── Lato-Light.ttf
+│           │   ├── Lato-LightItalic.ttf
+│           │   ├── Lato-Medium.ttf
+│           │   ├── Lato-MediumItalic.ttf
+│           │   ├── Lato-Regular.ttf
+│           │   ├── Lato-SemiBold.ttf
+│           │   ├── Lato-SemiBoldItalic.ttf
+│           │   ├── Lato-Thin.ttf
+│           │   ├── Lato-ThinItalic.ttf
+│           │   └── OFL.txt
+│           ├── Microsoft.AspNetCore.Authentication.JwtBearer.dll
+│           ├── Microsoft.Bcl.AsyncInterfaces.dll
+│           ├── Microsoft.Build.Locator.dll
+│           ├── Microsoft.CodeAnalysis.CSharp.dll
+│           ├── Microsoft.CodeAnalysis.CSharp.Workspaces.dll
+│           ├── Microsoft.CodeAnalysis.dll
+│           ├── Microsoft.CodeAnalysis.Workspaces.dll
+│           ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
+│           ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
+│           ├── Microsoft.EntityFrameworkCore.Abstractions.dll
+│           ├── Microsoft.EntityFrameworkCore.Design.dll
+│           ├── Microsoft.EntityFrameworkCore.dll
+│           ├── Microsoft.EntityFrameworkCore.Relational.dll
+│           ├── Microsoft.Extensions.Caching.Abstractions.dll
+│           ├── Microsoft.Extensions.Caching.Memory.dll
+│           ├── Microsoft.Extensions.Configuration.Abstractions.dll
+│           ├── Microsoft.Extensions.DependencyInjection.Abstractions.dll
+│           ├── Microsoft.Extensions.DependencyInjection.dll
+│           ├── Microsoft.Extensions.DependencyModel.dll
+│           ├── Microsoft.Extensions.Logging.Abstractions.dll
+│           ├── Microsoft.Extensions.Logging.dll
+│           ├── Microsoft.Extensions.Options.dll
+│           ├── Microsoft.Extensions.Primitives.dll
+│           ├── Microsoft.IdentityModel.Abstractions.dll
+│           ├── Microsoft.IdentityModel.JsonWebTokens.dll
+│           ├── Microsoft.IdentityModel.Logging.dll
+│           ├── Microsoft.IdentityModel.Protocols.dll
+│           ├── Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+│           ├── Microsoft.IdentityModel.Tokens.dll
+│           ├── Microsoft.OpenApi.dll
+│           ├── Mono.TextTemplating.dll
+│           ├── Npgsql.dll
+│           ├── Npgsql.EntityFrameworkCore.PostgreSQL.dll
+│           ├── out
+│           │   ├── appsettings.Development.json
+│           │   ├── appsettings.json
+│           │   ├── CSharpAssistant.API.deps.json
+│           │   ├── CSharpAssistant.API.runtimeconfig.json
+│           │   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│           │   ├── out
+│           │   │   ├── appsettings.Development.json
+│           │   │   ├── appsettings.json
+│           │   │   ├── CSharpAssistant.API.deps.json
+│           │   │   ├── CSharpAssistant.API.runtimeconfig.json
+│           │   │   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│           │   │   ├── out
+│           │   │   │   ├── appsettings.Development.json
+│           │   │   │   ├── appsettings.json
+│           │   │   │   ├── CSharpAssistant.API.deps.json
+│           │   │   │   ├── CSharpAssistant.API.runtimeconfig.json
+│           │   │   │   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│           │   │   │   └── web.config
+│           │   │   └── web.config
+│           │   └── web.config
+│           ├── pl
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── pt-BR
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── QuestPDF.dll
+│           ├── ru
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── runtimes
+│           │   ├── browser
+│           │   │   └── lib
+│           │   │       └── net8.0
+│           │   │           └── System.Text.Encodings.Web.dll
+│           │   ├── linux-arm64
+│           │   │   └── native
+│           │   │       ├── libcrypto.so
+│           │   │       ├── libjpeg.so.8
+│           │   │       ├── libqpdf.so
+│           │   │       └── libQuestPdfSkia.so
+│           │   ├── linux-musl-x64
+│           │   │   └── native
+│           │   │       ├── libcrypto.so
+│           │   │       ├── libjpeg.so.8
+│           │   │       ├── libqpdf.so
+│           │   │       └── libQuestPdfSkia.so
+│           │   ├── linux-x64
+│           │   │   └── native
+│           │   │       ├── libcrypto.so
+│           │   │       ├── libjpeg.so.8
+│           │   │       ├── libqpdf.so
+│           │   │       └── libQuestPdfSkia.so
+│           │   ├── osx-arm64
+│           │   │   └── native
+│           │   │       ├── libcrypto.dylib
+│           │   │       ├── libjpeg.dylib
+│           │   │       ├── libqpdf.dylib
+│           │   │       └── libQuestPdfSkia.dylib
+│           │   ├── osx-x64
+│           │   │   └── native
+│           │   │       ├── libcrypto.dylib
+│           │   │       ├── libjpeg.dylib
+│           │   │       ├── libqpdf.dylib
+│           │   │       └── libQuestPdfSkia.dylib
+│           │   ├── win-x64
+│           │   │   └── native
+│           │   │       ├── libgcc_s_seh-1.dll
+│           │   │       ├── libstdc++-6.dll
+│           │   │       ├── libwinpthread-1.dll
+│           │   │       ├── qpdf.dll
+│           │   │       └── QuestPdfSkia.dll
+│           │   └── win-x86
+│           │       └── native
+│           │           ├── libgcc_s_dw2-1.dll
+│           │           ├── libstdc++-6.dll
+│           │           ├── libwinpthread-1.dll
+│           │           ├── qpdf.dll
+│           │           └── QuestPdfSkia.dll
+│           ├── Scripts
+│           │   └── produtos_backup.json
+│           ├── Swashbuckle.AspNetCore.Swagger.dll
+│           ├── Swashbuckle.AspNetCore.SwaggerGen.dll
+│           ├── Swashbuckle.AspNetCore.SwaggerUI.dll
+│           ├── System.CodeDom.dll
+│           ├── System.Composition.AttributedModel.dll
+│           ├── System.Composition.Convention.dll
+│           ├── System.Composition.Hosting.dll
+│           ├── System.Composition.Runtime.dll
+│           ├── System.Composition.TypedParts.dll
+│           ├── System.Diagnostics.DiagnosticSource.dll
+│           ├── System.IdentityModel.Tokens.Jwt.dll
+│           ├── System.IO.Pipelines.dll
+│           ├── System.Text.Encodings.Web.dll
+│           ├── System.Text.Json.dll
+│           ├── tr
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           ├── zh-Hans
+│           │   ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.resources.dll
+│           │   ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│           │   └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+│           └── zh-Hant
+│               ├── Microsoft.CodeAnalysis.CSharp.resources.dll
+│               ├── Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+│               ├── Microsoft.CodeAnalysis.resources.dll
+│               ├── Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+│               └── Microsoft.CodeAnalysis.Workspaces.resources.dll
+├── Controllers
+│   ├── AuthController.cs
+│   ├── CategoriesController.cs
+│   ├── CodeExecutionController.cs
+│   ├── OrdersController.cs
+│   ├── ProductsController.cs
+│   ├── ReportsController.cs
+│   ├── SettingsController.cs
+│   ├── StatusController.cs
+│   ├── StockController.cs
+│   ├── SubcategoriesController.cs
+│   └── SubcategoriesController.cs.save
+├── CSharpAssistant.API.http
+├── CSharpAssistant.API.sln
+├── Data
+│   └── AppDbContext.cs
+├── Dockerfile
+├── DTOs
+│   ├── LoginDTO.cs
+│   ├── OrderCreateDTO.cs
+│   ├── OrderDTO.cs
+│   ├── OrderItemDTO.cs
+│   ├── ProductDTO.cs
+│   └── RegisterDTO.cs
+├── e-commerce.csproj
+├── estrutura_pastas.txt
+├── fake.pem
+├── Helpers
+│   └── PasswordHasher.cs
+├── Migrations
+│   ├── 20250730144303_InitFinal.cs
+│   ├── 20250730144303_InitFinal.Designer.cs
+│   ├── 20250801181704_AddOrderCreatedAt.cs
+│   ├── 20250801181704_AddOrderCreatedAt.Designer.cs
+│   └── AppDbContextModelSnapshot.cs
+├── Models
+│   ├── Category.cs
+│   ├── Order.cs
+│   ├── OrderItem.cs
+│   ├── Product.cs
+│   ├── Setting.cs
+│   ├── StoreProductVisibility.cs
+│   ├── StoreStock.cs
+│   ├── Subcategory.cs
+│   └── User.cs
+├── obj
+│   ├── Debug
+│   │   └── net8.0
+│   │       ├── .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+│   │       ├── apphost
+│   │       ├── e-commerce.AssemblyInfo.cs
+│   │       ├── e-commerce.AssemblyInfoInputs.cache
+│   │       ├── e-commerce.assets.cache
+│   │       ├── e-commerce.csproj.AssemblyReference.cache
+│   │       ├── e-commerce.csproj.CoreCompileInputs.cache
+│   │       ├── e-commerce.csproj.FileListAbsolute.txt
+│   │       ├── e-commerce.csproj.Up2Date
+│   │       ├── e-commerce.dll
+│   │       ├── e-commerce.GeneratedMSBuildEditorConfig.editorconfig
+│   │       ├── e-commerce.genruntimeconfig.cache
+│   │       ├── e-commerce.GlobalUsings.g.cs
+│   │       ├── e-commerce.MvcApplicationPartsAssemblyInfo.cache
+│   │       ├── e-commerce.MvcApplicationPartsAssemblyInfo.cs
+│   │       ├── e-commerce.pdb
+│   │       ├── e-commerce.sourcelink.json
+│   │       ├── ref
+│   │       │   └── e-commerce.dll
+│   │       ├── refint
+│   │       │   └── e-commerce.dll
+│   │       ├── staticwebassets
+│   │       │   ├── msbuild.build.e-commerce.props
+│   │       │   ├── msbuild.buildMultiTargeting.e-commerce.props
+│   │       │   └── msbuild.buildTransitive.e-commerce.props
+│   │       ├── staticwebassets.build.endpoints.json
+│   │       └── staticwebassets.build.json
+│   ├── e-commerce.csproj.EntityFrameworkCore.targets
+│   ├── e-commerce.csproj.nuget.dgspec.json
+│   ├── e-commerce.csproj.nuget.g.props
+│   ├── e-commerce.csproj.nuget.g.targets
+│   ├── project.assets.json
+│   └── project.nuget.cache
+├── out
+│   ├── .DS_Store
+│   ├── appsettings.Development.json
+│   ├── appsettings.json
+│   ├── CSharpAssistant.API
+│   ├── CSharpAssistant.API.deps.json
+│   ├── CSharpAssistant.API.dll
+│   ├── CSharpAssistant.API.pdb
+│   ├── CSharpAssistant.API.runtimeconfig.json
+│   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│   ├── Microsoft.AspNetCore.OpenApi.dll
+│   ├── Microsoft.OpenApi.dll
+│   ├── out
+│   │   ├── .DS_Store
+│   │   ├── appsettings.Development.json
+│   │   ├── appsettings.json
+│   │   ├── CSharpAssistant.API.deps.json
+│   │   ├── CSharpAssistant.API.runtimeconfig.json
+│   │   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│   │   ├── out
+│   │   │   ├── appsettings.Development.json
+│   │   │   ├── appsettings.json
+│   │   │   ├── CSharpAssistant.API.deps.json
+│   │   │   ├── CSharpAssistant.API.runtimeconfig.json
+│   │   │   ├── CSharpAssistant.API.staticwebassets.endpoints.json
+│   │   │   └── web.config
+│   │   └── web.config
+│   ├── Swashbuckle.AspNetCore.Swagger.dll
+│   ├── Swashbuckle.AspNetCore.SwaggerGen.dll
+│   ├── Swashbuckle.AspNetCore.SwaggerUI.dll
+│   └── web.config
+├── Program.cs
+├── Properties
+│   └── launchSettings.json
+├── README_banco.MD
+├── README_EcommerceEskimo.md
+├── render.yaml
+├── Scripts
+│   ├── ImportProductsFromJson.cs
+│   └── produtos_backup.json
+└── Services
+    ├── ProductService.cs
+    └── TokenService.cs
+
+58 directories, 304 files
