@@ -35,6 +35,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
         };
     });
+    //mercado pago
+builder.Services.AddScoped<MercadoPagoService>();
+builder.Services.AddHttpClient();
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
