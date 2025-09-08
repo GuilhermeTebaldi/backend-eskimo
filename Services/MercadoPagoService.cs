@@ -9,15 +9,13 @@ using System.Threading.Tasks;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace CSharpAssistant.API.Services
 {
     /// <summary>
-    /// Serviço para criar Preference (checkout) no Mercado Pago e consultar pagamentos (REST, sem SDK).
-    /// - Usa PaymentConfig por loja para pegar o MpAccessToken correto (uma conta por loja).
-    /// - External_reference = order.Id (vincula pagamento ao pedido).
-    /// - back_urls + notification_url (webhook) configurados com base na URL pública.
+    /// Serviço Mercado Pago (REST, sem SDK):
+    /// - Cria Preference (Checkout Pro) com itens do pedido + taxa de entrega (shipments.cost).
+    /// - Consulta pagamento pelo ID, retornando (status, external_reference).
     /// </summary>
     public class MercadoPagoService
     {
@@ -33,19 +31,19 @@ namespace CSharpAssistant.API.Services
 
             _jsonOpts = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = null, // MP usa snake_case/sem padrão fixo na resposta
+                PropertyNamingPolicy = null, // manter chaves como enviamos
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 WriteIndented = false
             };
         }
 
         /// <summary>
-        /// Cria uma Preference de checkout no Mercado Pago para o pedido informado.
+        /// Cria uma Preference no Mercado Pago para o pedido informado.
         /// Retorna (initPointUrl, preferenceId).
         /// </summary>
         public async Task<(string initPointUrl, string preferenceId)> CreateCheckoutPreferenceAsync(
             int orderId,
-            string publicBaseUrl, // ex: https://backend-eskimo.onrender.com (ou URL pública setada)
+            string publicBaseUrl, // ex.: https://backend-eskimo.onrender.com
             CancellationToken ct = default
         )
         {
@@ -62,7 +60,7 @@ namespace CSharpAssistant.API.Services
             if (string.IsNullOrWhiteSpace(order.Store))
                 throw new InvalidOperationException("Pedido sem loja definida.");
 
-            // 1) Busca a configuração de pagamento por loja (case-insensitive)
+            // 1) Config da loja (credenciais Mercado Pago)
             var config = await _db.Set<PaymentConfig>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Store.ToLower() == order.Store.ToLower(), ct);
@@ -73,30 +71,83 @@ namespace CSharpAssistant.API.Services
             if (string.IsNullOrWhiteSpace(config.MpAccessToken))
                 throw new InvalidOperationException($"Loja '{order.Store}' sem Access Token do Mercado Pago.");
 
-            // 2) Monta payload da Preference
+            // 2) Soma dos itens (centavos arredondados corretamente)
+            decimal itemsSum = order.Items.Sum(i =>
+                Math.Round((decimal)i.Price, 2, MidpointRounding.AwayFromZero) * i.Quantity);
+
+            // 3) Calcula taxa de entrega de forma resiliente:
+            decimal deliveryFee = 0m;
+
+            // 3a) se existir a propriedade DeliveryFee no modelo, usa ela
+            try
+            {
+                var dfProp = order.GetType().GetProperty("DeliveryFee");
+                if (dfProp != null)
+                {
+                    var val = dfProp.GetValue(order);
+                    if (val is decimal d) deliveryFee = Math.Round(d, 2, MidpointRounding.AwayFromZero);
+                    else if (val is double dd) deliveryFee = Math.Round((decimal)dd, 2, MidpointRounding.AwayFromZero);
+                    else if (val is float ff) deliveryFee = Math.Round((decimal)ff, 2, MidpointRounding.AwayFromZero);
+                }
+            }
+            catch { /* ignora e tenta calcular pela diferença */ }
+
+            // 3b) se não vier explicitamente, tenta inferir por (Total - itens)
+            if (deliveryFee <= 0m)
+            {
+                try
+                {
+                    var totalProp = order.GetType().GetProperty("Total");
+                    if (totalProp != null)
+                    {
+                        decimal totalVal = 0m;
+                        var val = totalProp.GetValue(order);
+                        if (val is decimal d) totalVal = d;
+                        else if (val is double dd) totalVal = (decimal)dd;
+                        else if (val is float ff) totalVal = (decimal)ff;
+
+                        var diff = totalVal - itemsSum;
+                        if (diff > 0m) deliveryFee = Math.Round(diff, 2, MidpointRounding.AwayFromZero);
+                    }
+                }
+                catch { /* noop */ }
+            }
+
+            // 4) Monta payload da Preference (inclui shipments.cost quando houver entrega)
+            var items = order.Items.Select(i => new
+            {
+                title = i.Name,
+                unit_price = Math.Round((decimal)i.Price, 2, MidpointRounding.AwayFromZero),
+                quantity = i.Quantity,
+                currency_id = "BRL",
+                picture_url = string.IsNullOrWhiteSpace(i.ImageUrl) ? null : i.ImageUrl
+            }).ToArray();
+
+            object? shipments = null;
+            if (deliveryFee > 0m)
+            {
+                shipments = new
+                {
+                    cost = deliveryFee,
+                    mode = "not_specified" // frete customizado
+                };
+            }
+
             var preference = new
             {
-                items = order.Items.Select(i => new
-                {
-                    title = i.Name,
-                    unit_price = Math.Round((decimal)i.Price, 2, MidpointRounding.AwayFromZero),
-                    quantity = i.Quantity,
-                    currency_id = "BRL",
-                    picture_url = string.IsNullOrWhiteSpace(i.ImageUrl) ? null : i.ImageUrl
-                }).ToArray(),
-
+                items,
                 payer = new
                 {
                     name = order.CustomerName
                 },
 
-                external_reference = order.Id.ToString(), // usado no webhook p/ localizar o pedido
+                external_reference = order.Id.ToString(), // usado no webhook pra localizar o pedido
 
                 back_urls = new
                 {
                     success = $"{publicBaseUrl}/payments/success",
                     failure = $"{publicBaseUrl}/payments/failure",
-                    pending  = $"{publicBaseUrl}/payments/pending"
+                    pending = $"{publicBaseUrl}/payments/pending"
                 },
 
                 auto_return = "approved",
@@ -104,7 +155,10 @@ namespace CSharpAssistant.API.Services
                 // Webhook da sua API (server-to-server)
                 notification_url = $"{publicBaseUrl}/api/payments/mp/webhook",
 
-                // (Opcional) regras de pagamento
+                // Frete/entrega (só envia se > 0)
+                shipments,
+
+                // (opcional) regras de parcelamento
                 payment_methods = new
                 {
                     installments = 12,
@@ -135,12 +189,12 @@ namespace CSharpAssistant.API.Services
             if (string.IsNullOrWhiteSpace(initPoint) || string.IsNullOrWhiteSpace(prefId))
                 throw new InvalidOperationException("Resposta do Mercado Pago inválida (sem init_point ou id).");
 
-            return (initPoint, prefId);
+            return (initPoint!, prefId!);
         }
 
         /// <summary>
-        /// Consulta um pagamento no Mercado Pago pelo ID e retorna (status, external_reference).
-        /// Tenta em todas as contas ativas (todas as lojas com provider=mercadopago).
+        /// Consulta um pagamento e retorna (status, external_reference) ou null.
+        /// Tenta todos os tokens ativos (todas as lojas provider=mercadopago).
         /// </summary>
         public async Task<(string status, string externalReference)?> TryGetPaymentStatusAsync(string paymentId, CancellationToken ct = default)
         {
