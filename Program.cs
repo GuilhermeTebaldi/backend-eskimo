@@ -8,6 +8,7 @@ using QuestPDF.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IO;
+using Microsoft.AspNetCore.HttpOverrides;
 
 using CSharpAssistant.API.Scripts;
 using CSharpAssistant.API.Data;
@@ -35,10 +36,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
         };
     });
-    //mercado pago
-builder.Services.AddScoped<MercadoPagoService>();
-builder.Services.AddHttpClient();
-
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
@@ -48,8 +45,46 @@ builder.Services.AddControllers()
     .AddJsonOptions(x =>
         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
-// 🧩 Serviços
+// 🗄️ Banco de dados PostgreSQL
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+    options.EnableSensitiveDataLogging();
+});
+
+// 🧩 Serviços (DI)
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<MercadoPagoService>(); // 💳 Mercado Pago
+builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
+
+// 🌐 CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://localhost:5173",
+            "https://127.0.0.1:5173",
+
+            // Admin / Site públicos
+            "https://www.admin.eskimochapeco.com.br",
+            "https://admin.eskimochapeco.com.br",
+            "https://eskimochapeco.com.br",
+            "https://www.eskimochapeco.com.br",
+
+            // Vercel antigos/atuais
+            "https://eskimosites.vercel.app",
+            "https://admin-panel-eskimo.vercel.app",
+            "https://site-eskimo.vercel.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+        // .AllowCredentials(); // habilite se precisar enviar cookies/autenticação cross-site
+    });
+});
 
 // 📚 Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -84,63 +119,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 🗄️ Banco de dados PostgreSQL
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
-    options.EnableSensitiveDataLogging();
-});
-
-// 🌐 CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            
-              "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "https://localhost:5173",     // caso rode Vite em https
-            "https://127.0.0.1:5173",
-            "https://www.admin.eskimochapeco.com.br",
-            // Domínios novos do site
-            "https://admin.eskimochapeco.com.br",
-            "https://eskimochapeco.com.br",
-            "https://www.eskimochapeco.com.br",
-
-            // Domínios antigos/atuais (manter enquanto necessário)
-            "https://eskimosites.vercel.app",
-            "https://admin-panel-eskimo.vercel.app"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
-});
-
-// 🔎 Log ConnectionString
+// 🔎 Log ConnectionString (debug)
 Console.WriteLine("🔑 ConnectionString atual:");
 Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
 
 var app = builder.Build();
-// 🚀 Cria as tabelas no banco se não existirem
+
+// 📄 Licença QuestPDF
+QuestPDF.Settings.License = LicenseType.Community;
+
+// 🗃️ Migrar DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
 
-
-// 📄 Licença QuestPDF
-QuestPDF.Settings.License = LicenseType.Community;
-
-// ✅ Debug: listar arquivos no container Render
-Console.WriteLine("🧪 Arquivos no ambiente Render:");
-foreach (var f in Directory.GetFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories))
+// ⚙️ Proxy/Headers da Render (garante Scheme/Host corretos p/ back_urls/webhook)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    Console.WriteLine("📄 " + f);
-}
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
-// 🚀 Middlewares
+// 🔍 Swagger
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -155,7 +156,8 @@ app.UseRouting();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+
+app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
 
 // 🧪 Rotas teste
 app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
@@ -178,7 +180,7 @@ app.MapPost("/run-importer", async (AppDbContext db) =>
     }
 });
 
-// ✅ Log final ao iniciar
+// ✅ Log final
 Console.WriteLine("✅ API iniciada e pronta para receber requisições.");
 
 app.Run();
