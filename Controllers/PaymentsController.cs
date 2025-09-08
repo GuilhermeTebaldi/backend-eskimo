@@ -1,11 +1,14 @@
 // CSharpAssistant.API/Controllers/PaymentsController.cs
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace CSharpAssistant.API.Controllers
 {
@@ -16,12 +19,18 @@ namespace CSharpAssistant.API.Controllers
         private readonly AppDbContext _db;
         private readonly MercadoPagoService _mp;
         private readonly ILogger<PaymentsController> _logger;
+        private readonly IConfiguration _config;
 
-        public PaymentsController(AppDbContext db, MercadoPagoService mp, ILogger<PaymentsController> logger)
+        public PaymentsController(
+            AppDbContext db,
+            MercadoPagoService mp,
+            ILogger<PaymentsController> logger,
+            IConfiguration config)
         {
             _db = db;
             _mp = mp;
             _logger = logger;
+            _config = config;
         }
 
         /// <summary>
@@ -41,10 +50,17 @@ namespace CSharpAssistant.API.Controllers
 
             try
             {
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                // Preferência por URL pública configurada (evita problemas atrás de proxy/prod)
+                var baseUrl = _config["PublicBaseUrl"];
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    // fallback: base da própria requisição
+                    baseUrl = $"{Request.Scheme}://{Request.Host}";
+                }
+
                 var (url, prefId) = await _mp.CreateCheckoutPreferenceAsync(orderId, baseUrl);
 
-                // (Opcional) Armazenar provider/prefId no Order se você tiver campos pra isso.
+                // (Opcional) Persistir referencia do pagamento no pedido:
                 // var order = await _db.Orders.FindAsync(orderId);
                 // if (order != null) { order.PaymentProvider = "mercadopago"; order.PaymentReference = prefId; await _db.SaveChangesAsync(); }
 
@@ -64,29 +80,39 @@ namespace CSharpAssistant.API.Controllers
 
         /// <summary>
         /// Webhook do Mercado Pago — recebe notificações de pagamento.
-        /// MP envia GET (com query type=payment&data.id=xxx) ou POST dependendo da configuração.
+        /// MP pode enviar GET (type=payment&data.id=xxx) ou POST (JSON).
+        /// Aceita também HEAD/OPTIONS para evitar ruído.
         /// </summary>
+        [HttpOptions("mp/webhook")]
+        public IActionResult WebhookOptions() => Ok();
+
+        [HttpHead("mp/webhook")]
+        public IActionResult WebhookHead() => Ok();
+
         [HttpPost("mp/webhook")]
         [HttpGet("mp/webhook")]
         public async Task<IActionResult> MercadoPagoWebhook()
         {
             try
             {
-                // 1) Extrai paymentId (GET ou POST)
+                // 1) Extrai paymentId de:
+                // - Query: ?type=payment&data.id=123 ou ?id=123
+                // - Body JSON: { "data": { "id": "123" }, "type": "payment", ... }
                 string? paymentId = null;
 
-                // GET: ?type=payment&data.id=123
                 if (Request.Query.TryGetValue("data.id", out var dataId) && !string.IsNullOrWhiteSpace(dataId))
                     paymentId = dataId.ToString();
 
                 if (string.IsNullOrWhiteSpace(paymentId) && Request.Query.TryGetValue("id", out var id))
                     paymentId = id.ToString();
 
-                // POST (JSON): { "data": { "id": "123" }, "type": "payment", ... }
-                if (string.IsNullOrWhiteSpace(paymentId) && Request.ContentLength > 0)
+                if (string.IsNullOrWhiteSpace(paymentId) && (Request.ContentLength ?? 0) > 0)
                 {
-                    using var reader = new System.IO.StreamReader(Request.Body);
+                    Request.EnableBuffering(); // permite ler o body sem quebrar o pipeline
+                    using var reader = new StreamReader(Request.Body);
                     var bodyStr = await reader.ReadToEndAsync();
+                    Request.Body.Position = 0;
+
                     if (!string.IsNullOrWhiteSpace(bodyStr))
                     {
                         using var json = System.Text.Json.JsonDocument.Parse(bodyStr);
@@ -95,13 +121,18 @@ namespace CSharpAssistant.API.Controllers
                                          .GetPropertyOrDefault("id")?
                                          .GetString()
                                      ?? root.GetPropertyOrDefault("id")?.GetString();
+
+                        // (Opcional) Log de segurança mínimo
+                        var type = root.GetPropertyOrDefault("type")?.GetString();
+                        _logger.LogInformation("Webhook MP body recebido. type={type}, paymentId={paymentId}", type, paymentId);
                     }
                 }
 
                 if (string.IsNullOrWhiteSpace(paymentId))
                 {
                     _logger.LogWarning("Webhook Mercado Pago sem paymentId.");
-                    return Ok(); // responde 200 para evitar retries infinitos
+                    // 200 para evitar retries infinitos do MP (evita ban)
+                    return Ok();
                 }
 
                 // 2) Consulta o pagamento no MP (tentando todos os tokens ativos até achar)
@@ -109,7 +140,7 @@ namespace CSharpAssistant.API.Controllers
                 if (statusInfo == null)
                 {
                     _logger.LogWarning("Não foi possível consultar pagamento {paymentId} em nenhuma conta configurada.", paymentId);
-                    return Ok(); // responde 200 mesmo assim
+                    return Ok(); // retorna 200 para evitar retry agressivo; logamos para análise
                 }
 
                 var (status, externalReference) = statusInfo.Value;
@@ -122,21 +153,23 @@ namespace CSharpAssistant.API.Controllers
                     {
                         if (string.Equals(status, "approved", StringComparison.OrdinalIgnoreCase))
                         {
+                            // Evita regredir se já foi entregue
                             if (!string.Equals(order.Status, "entregue", StringComparison.OrdinalIgnoreCase))
                             {
-                                order.Status = "pago"; // marca como pago
+                                order.Status = "pago";
                                 await _db.SaveChangesAsync();
-                                _logger.LogInformation("Order {orderId} marcado como pago via webhook MP (payment {paymentId}).", orderId, paymentId);
+                                _logger.LogInformation("Order {orderId} marcado como PAGO via webhook MP (payment {paymentId}).", orderId, paymentId);
                             }
                         }
                         else if (string.Equals(status, "rejected", StringComparison.OrdinalIgnoreCase))
                         {
-                            // opcional: marcar como cancelado/rejeitado
-                            _logger.LogInformation("Pagamento rejeitado para order {orderId} (payment {paymentId}).", orderId, paymentId);
+                            _logger.LogInformation("Pagamento REJEITADO para order {orderId} (payment {paymentId}).", orderId, paymentId);
+                            // (Opcional) order.Status = "cancelado";
+                            // await _db.SaveChangesAsync();
                         }
                         else
                         {
-                            _logger.LogInformation("Pagamento {paymentId} com status {status} para order {orderId}.", paymentId, status, orderId);
+                            _logger.LogInformation("Pagamento {paymentId} com status {status} (order {orderId}).", paymentId, status, orderId);
                         }
                     }
                     else
@@ -154,7 +187,7 @@ namespace CSharpAssistant.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao processar webhook do Mercado Pago.");
-                // Retorne 200 para evitar reenvio agressivo do MP; logamos o erro para análise.
+                // 200 para evitar reenvio agressivo; erro fica logado para análise.
                 return Ok();
             }
         }

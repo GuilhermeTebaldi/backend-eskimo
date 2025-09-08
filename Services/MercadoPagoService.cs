@@ -4,26 +4,39 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace CSharpAssistant.API.Services
 {
     /// <summary>
-    /// Serviço mínimo para criar Preference (checkout) no Mercado Pago e consultar pagamentos.
-    /// - NÃO usa SDK; faz chamadas REST com HttpClient.
-    /// - Usa PaymentConfig por loja para pegar MpAccessToken correto (uma conta por CNPJ).
+    /// Serviço para criar Preference (checkout) no Mercado Pago e consultar pagamentos (REST, sem SDK).
+    /// - Usa PaymentConfig por loja para pegar o MpAccessToken correto (uma conta por loja).
+    /// - External_reference = order.Id (vincula pagamento ao pedido).
+    /// - back_urls + notification_url (webhook) configurados com base na URL pública.
     /// </summary>
     public class MercadoPagoService
     {
-        private static readonly HttpClient _http = new HttpClient();
         private readonly AppDbContext _db;
+        private readonly HttpClient _http;
+        private readonly JsonSerializerOptions _jsonOpts;
 
-        public MercadoPagoService(AppDbContext db)
+        public MercadoPagoService(AppDbContext db, IHttpClientFactory httpClientFactory)
         {
             _db = db;
+            _http = httpClientFactory.CreateClient(nameof(MercadoPagoService));
+            _http.Timeout = TimeSpan.FromSeconds(30);
+
+            _jsonOpts = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null, // MP usa snake_case/sem padrão fixo na resposta
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                WriteIndented = false
+            };
         }
 
         /// <summary>
@@ -32,12 +45,13 @@ namespace CSharpAssistant.API.Services
         /// </summary>
         public async Task<(string initPointUrl, string preferenceId)> CreateCheckoutPreferenceAsync(
             int orderId,
-            string requestBaseUrl // ex: https://backend-eskimo.onrender.com
+            string publicBaseUrl, // ex: https://backend-eskimo.onrender.com (ou URL pública setada)
+            CancellationToken ct = default
         )
         {
             var order = await _db.Orders
                 .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == orderId);
+                .FirstOrDefaultAsync(o => o.Id == orderId, ct);
 
             if (order == null)
                 throw new InvalidOperationException("Pedido não encontrado.");
@@ -48,55 +62,65 @@ namespace CSharpAssistant.API.Services
             if (string.IsNullOrWhiteSpace(order.Store))
                 throw new InvalidOperationException("Pedido sem loja definida.");
 
-            // Busca a configuração de pagamento por loja (case-insensitive)
+            // 1) Busca a configuração de pagamento por loja (case-insensitive)
             var config = await _db.Set<PaymentConfig>()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Store.ToLower() == order.Store.ToLower());
+                .FirstOrDefaultAsync(c => c.Store.ToLower() == order.Store.ToLower(), ct);
 
-            if (config == null || !config.IsActive || config.Provider?.ToLower() != "mercadopago")
+            if (config == null || !config.IsActive || string.IsNullOrWhiteSpace(config.Provider) || config.Provider.ToLower() != "mercadopago")
                 throw new InvalidOperationException($"Loja '{order.Store}' sem configuração ativa do Mercado Pago.");
 
             if (string.IsNullOrWhiteSpace(config.MpAccessToken))
                 throw new InvalidOperationException($"Loja '{order.Store}' sem Access Token do Mercado Pago.");
 
-            // Monta payload da Preference
+            // 2) Monta payload da Preference
             var preference = new
             {
                 items = order.Items.Select(i => new
                 {
                     title = i.Name,
-                    unit_price = (decimal)i.Price,
+                    unit_price = Math.Round((decimal)i.Price, 2, MidpointRounding.AwayFromZero),
                     quantity = i.Quantity,
                     currency_id = "BRL",
                     picture_url = string.IsNullOrWhiteSpace(i.ImageUrl) ? null : i.ImageUrl
                 }).ToArray(),
+
                 payer = new
                 {
                     name = order.CustomerName
                 },
-                external_reference = order.Id.ToString(), // usaremos no webhook
+
+                external_reference = order.Id.ToString(), // usado no webhook p/ localizar o pedido
+
                 back_urls = new
                 {
-                    success = $"{requestBaseUrl}/payments/success",
-                    failure = $"{requestBaseUrl}/payments/failure",
-                    pending = $"{requestBaseUrl}/payments/pending"
+                    success = $"{publicBaseUrl}/payments/success",
+                    failure = $"{publicBaseUrl}/payments/failure",
+                    pending  = $"{publicBaseUrl}/payments/pending"
                 },
+
                 auto_return = "approved",
-                notification_url = $"{requestBaseUrl}/api/payments/mp/webhook", // webhook da sua API
+
+                // Webhook da sua API (server-to-server)
+                notification_url = $"{publicBaseUrl}/api/payments/mp/webhook",
+
+                // (Opcional) regras de pagamento
                 payment_methods = new
                 {
-                    installments = 12, // máximo de parcelas
+                    installments = 12,
                     default_installments = 1
                 }
             };
 
-            var json = JsonSerializer.Serialize(preference, new JsonSerializerOptions { IgnoreNullValues = true });
+            var json = JsonSerializer.Serialize(preference, _jsonOpts);
+
             using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.mercadopago.com/checkout/preferences");
             req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.MpAccessToken);
+            req.Headers.Accept.ParseAdd("application/json");
             req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            using var resp = await _http.SendAsync(req);
-            var body = await resp.Content.ReadAsStringAsync();
+            using var resp = await _http.SendAsync(req, ct);
+            var body = await resp.Content.ReadAsStringAsync(ct);
 
             if (!resp.IsSuccessStatusCode)
                 throw new InvalidOperationException($"Mercado Pago error: {resp.StatusCode} - {body}");
@@ -106,7 +130,6 @@ namespace CSharpAssistant.API.Services
 
             var initPoint = root.GetPropertyOrDefault("init_point")?.GetString()
                             ?? root.GetPropertyOrDefault("sandbox_init_point")?.GetString();
-
             var prefId = root.GetPropertyOrDefault("id")?.GetString();
 
             if (string.IsNullOrWhiteSpace(initPoint) || string.IsNullOrWhiteSpace(prefId))
@@ -116,23 +139,23 @@ namespace CSharpAssistant.API.Services
         }
 
         /// <summary>
-        /// Consulta um pagamento no Mercado Pago pelo ID e retorna um objeto com status e external_reference.
-        /// OBS: Como cada CNPJ tem um AccessToken, tentamos em todas as configs ativas até achar.
+        /// Consulta um pagamento no Mercado Pago pelo ID e retorna (status, external_reference).
+        /// Tenta em todas as contas ativas (todas as lojas com provider=mercadopago).
         /// </summary>
-        public async Task<(string status, string externalReference)?> TryGetPaymentStatusAsync(string paymentId)
+        public async Task<(string status, string externalReference)?> TryGetPaymentStatusAsync(string paymentId, CancellationToken ct = default)
         {
             var tokens = await _db.Set<PaymentConfig>()
                 .AsNoTracking()
                 .Where(c => c.IsActive && c.Provider.ToLower() == "mercadopago" && c.MpAccessToken != null)
                 .Select(c => c.MpAccessToken!)
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync(ct);
 
             foreach (var token in tokens)
             {
                 try
                 {
-                    var res = await GetPaymentRawAsync(paymentId, token);
+                    var res = await GetPaymentRawAsync(paymentId, token, ct);
                     if (res.isOk)
                     {
                         var status = res.body.RootElement.GetPropertyOrDefault("status")?.GetString() ?? "";
@@ -151,13 +174,14 @@ namespace CSharpAssistant.API.Services
             return null;
         }
 
-        private async Task<(bool isOk, JsonDocument body)> GetPaymentRawAsync(string paymentId, string accessToken)
+        private async Task<(bool isOk, JsonDocument body)> GetPaymentRawAsync(string paymentId, string accessToken, CancellationToken ct)
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, $"https://api.mercadopago.com/v1/payments/{paymentId}");
             req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            req.Headers.Accept.ParseAdd("application/json");
 
-            using var resp = await _http.SendAsync(req);
-            var bodyStr = await resp.Content.ReadAsStringAsync();
+            using var resp = await _http.SendAsync(req, ct);
+            var bodyStr = await resp.Content.ReadAsStringAsync(ct);
             var json = JsonDocument.Parse(bodyStr);
             return (resp.IsSuccessStatusCode, json);
         }
