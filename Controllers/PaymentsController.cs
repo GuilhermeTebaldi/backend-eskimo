@@ -7,8 +7,8 @@ using CSharpAssistant.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace CSharpAssistant.API.Controllers
 {
@@ -75,75 +75,93 @@ namespace CSharpAssistant.API.Controllers
         }
 
         /// <summary>
+        /// Navegação em MESMA ABA: redireciona para o init_point do MP.
+        /// Front deve chamar window.location.assign(`${API_BASE}/api/payments/mp/go?orderId=...`)
+        /// </summary>
+        [HttpGet("mp/go")]
+        public async Task<IActionResult> Go([FromQuery] int orderId)
+        {
+            if (orderId <= 0) return BadRequest(new { message = "orderId inválido." });
+
+            try
+            {
+                var baseUrl = _config["PublicBaseUrl"];
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                    baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+                var (url, prefId) = await _mp.CreateCheckoutPreferenceAsync(orderId, baseUrl);
+
+                // opcional: salvar provider/ref no pedido
+                var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+                if (order != null)
+                {
+                    var hasProvider = order.GetType().GetProperty("PaymentProvider") != null;
+                    var hasRef = order.GetType().GetProperty("PaymentReference") != null;
+                    if (hasProvider) order.GetType().GetProperty("PaymentProvider")!.SetValue(order, "mercadopago");
+                    if (hasRef) order.GetType().GetProperty("PaymentReference")!.SetValue(order, prefId);
+                    if (hasProvider || hasRef) await _db.SaveChangesAsync();
+                }
+
+                return Redirect(url);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro no mp/go orderId={orderId}", orderId);
+                return Problem($"Falha ao iniciar pagamento: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Retorno do MP após pagamento. Redireciona o cliente de volta ao FRONT na tela da loja,
         /// com parâmetros para o front mostrar o modal de "Pedido Confirmado".
         /// </summary>
-        // GET /api/payments/mp/return/{state}?preference_id=XXX
+        /// GET /api/payments/mp/return/{state}?preference_id=XXX&payment_id=YYY&collection_id=ZZZ
         [HttpGet("mp/return/{state}")]
-        public async Task<IActionResult> Return(string state, [FromQuery(Name="preference_id")] string? prefId)
+        public async Task<IActionResult> Return(
+            string state,
+            [FromQuery(Name = "preference_id")] string? prefId,
+            [FromQuery(Name = "payment_id")] string? paymentId,
+            [FromQuery(Name = "collection_id")] string? collectionId)
         {
             int? orderId = null;
 
-            if (!string.IsNullOrWhiteSpace(prefId))
+            try
             {
-                // tenta por referência salva
-                var byRef = await _db.Orders.FirstOrDefaultAsync(o =>
-                    (o.GetType().GetProperty("PaymentReference") != null) &&
-                    (string?)o.GetType().GetProperty("PaymentReference")!.GetValue(o) == prefId);
-                if (byRef != null) orderId = byRef.Id;
-
-                // fallback: perguntar ao MP (external_reference da preference)
-                if (orderId is null)
+                // 1) preference_id → external_reference (orderId)
+                if (!string.IsNullOrWhiteSpace(prefId))
                     orderId = await _mp.TryGetOrderIdByPreferenceIdAsync(prefId);
+
+                // 2) fallback por payment_id
+                if (orderId is null && !string.IsNullOrWhiteSpace(paymentId))
+                {
+                    var info = await _mp.TryGetPaymentStatusAsync(paymentId);
+                    if (info != null && int.TryParse(info.Value.externalReference, out var oid))
+                        orderId = oid;
+                }
+
+                // 3) fallback por collection_id
+                if (orderId is null && !string.IsNullOrWhiteSpace(collectionId))
+                {
+                    var info = await _mp.TryGetPaymentStatusAsync(collectionId);
+                    if (info != null && int.TryParse(info.Value.externalReference, out var oid))
+                        orderId = oid;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro no retorno do MP (state={state}, pref={prefId})", state, prefId);
             }
 
-            // monta URL do front para voltar à LOJA, não "meus pedidos"
+            // monta URL do front para voltar à LOJA
             var front = _config["FrontBaseUrl"];
             if (string.IsNullOrWhiteSpace(front))
                 front = $"{Request.Scheme}://{Request.Host}";
-
             var dest = front.TrimEnd('/');
 
-            // adiciona flags para o front abrir o modal de confirmação
-            if (orderId is int id)
-                return Redirect($"{dest}/?orderId={id}&paid=1");
-            else
-                return Redirect($"{dest}/?paid=1");
+            return orderId is int id
+                ? Redirect($"{dest}/?orderId={id}&paid=1")
+                : Redirect($"{dest}/?paid=1");
         }
-// GET /api/payments/mp/go?orderId=123
-[HttpGet("mp/go")]
-public async Task<IActionResult> Go([FromQuery] int orderId)
-{
-    if (orderId <= 0) return BadRequest(new { message = "orderId inválido." });
-
-    try
-    {
-        var baseUrl = _config["PublicBaseUrl"];
-        if (string.IsNullOrWhiteSpace(baseUrl))
-            baseUrl = $"{Request.Scheme}://{Request.Host}";
-
-        var (url, prefId) = await _mp.CreateCheckoutPreferenceAsync(orderId, baseUrl);
-
-        // opcional: salvar provider/ref no pedido
-        var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
-        if (order != null)
-        {
-            var hasProvider = order.GetType().GetProperty("PaymentProvider") != null;
-            var hasRef = order.GetType().GetProperty("PaymentReference") != null;
-            if (hasProvider) order.GetType().GetProperty("PaymentProvider")!.SetValue(order, "mercadopago");
-            if (hasRef) order.GetType().GetProperty("PaymentReference")!.SetValue(order, prefId);
-            if (hasProvider || hasRef) await _db.SaveChangesAsync();
-        }
-
-        // redireciona em MESMA aba direto ao MP
-        return Redirect(url);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Erro no mp/go orderId={orderId}", orderId);
-        return Problem($"Falha ao iniciar pagamento: {ex.Message}");
-    }
-}
 
         // Webhook MP
         [HttpOptions("mp/webhook")]
