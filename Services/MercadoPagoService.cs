@@ -61,9 +61,18 @@ namespace CSharpAssistant.API.Services
                 throw new InvalidOperationException("Pedido sem loja definida.");
 
             // 1) Config da loja (credenciais Mercado Pago)
-            var config = await _db.Set<PaymentConfig>()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Store.ToLower() == order.Store.ToLower(), ct);
+            var storeSlug = (order.Store ?? "").Trim().ToLower();
+
+var config = await _db.Set<PaymentConfig>()
+    .AsNoTracking()
+    .Where(c =>
+        (c.Store ?? "").Trim().ToLower() == storeSlug &&
+        c.IsActive &&
+        c.Provider.ToLower() == "mercadopago" &&
+        !string.IsNullOrWhiteSpace(c.MpAccessToken))
+    .OrderByDescending(c => c.UpdatedAt)   // se não existir UpdatedAt, use .OrderByDescending(c => c.Id)
+    .FirstOrDefaultAsync(ct);
+
 
             if (config == null || !config.IsActive || string.IsNullOrWhiteSpace(config.Provider) || config.Provider.ToLower() != "mercadopago")
                 throw new InvalidOperationException($"Loja '{order.Store}' sem configuração ativa do Mercado Pago.");
