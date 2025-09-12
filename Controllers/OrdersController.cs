@@ -262,6 +262,39 @@ public async Task<IActionResult> CancelOrder(int id)
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Todos os pedidos foram excluídos com sucesso." });
+         }
+
+        // 🟢 GET: Buscar pedido por ID (para polling no front)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetOrderById(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
+
+            return Ok(new
+            {
+                order.Id,
+                order.Status,
+                order.Store,
+                order.CustomerName,
+                order.Total,
+                order.DeliveryFee,
+                order.PhoneNumber,
+                Items = order.Items.Select(i => new
+                {
+                    i.ProductId,
+                    i.Name,
+                    i.Price,
+                    i.Quantity,
+                    i.ImageUrl,
+                    i.Store
+                }).ToList()
+            });
         }
     }
 }
+
