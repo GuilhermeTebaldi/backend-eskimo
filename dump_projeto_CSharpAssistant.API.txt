@@ -1,4 +1,4 @@
-Controllers/PaymentsController.cs:
+./Controllers/PaymentsController.cs:
 ```cs
 // CSharpAssistant.API/Controllers/PaymentsController.cs
 using System;
@@ -296,7 +296,7 @@ namespace CSharpAssistant.API.Controllers
 
 ```
 
-Controllers/OrdersController.cs:
+./Controllers/OrdersController.cs:
 ```cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -562,13 +562,167 @@ public async Task<IActionResult> CancelOrder(int id)
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Todos os pedidos foram excluídos com sucesso." });
+         }
+
+        // 🟢 GET: Buscar pedido por ID (para polling no front)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetOrderById(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
+
+            return Ok(new
+            {
+                order.Id,
+                order.Status,
+                order.Store,
+                order.CustomerName,
+                order.Total,
+                order.DeliveryFee,
+                order.PhoneNumber,
+                Items = order.Items.Select(i => new
+                {
+                    i.ProductId,
+                    i.Name,
+                    i.Price,
+                    i.Quantity,
+                    i.ImageUrl,
+                    i.Store
+                }).ToList()
+            });
+        }
+    }
+}
+
+
+```
+
+./Controllers/PaymentConfigsController.cs:
+```cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Linq;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+using System;
+
+namespace CSharpAssistant.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PaymentConfigsController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public PaymentConfigsController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: api/paymentconfigs
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var list = await _context.PaymentConfigs
+                .OrderBy(p => p.Store)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // GET: api/paymentconfigs/{store}
+        [HttpGet("{store}")]
+        public async Task<IActionResult> GetByStore(string store)
+        {
+            if (string.IsNullOrWhiteSpace(store))
+                return BadRequest(new { message = "Parâmetro 'store' é obrigatório." });
+
+            var normalized = store.Trim();
+            var config = await _context.PaymentConfigs
+                .FirstOrDefaultAsync(p => p.Store == normalized);
+
+            if (config == null)
+                return NotFound(new { message = $"Nenhuma configuração encontrada para a loja '{normalized}'." });
+
+            return Ok(config);
+        }
+
+        // PUT: api/paymentconfigs/{store}  (Upsert)
+        [HttpPut("{store}")]
+        public async Task<IActionResult> Upsert(string store, [FromBody] PaymentConfig body)
+        {
+            if (string.IsNullOrWhiteSpace(store))
+                return BadRequest(new { message = "Parâmetro 'store' é obrigatório." });
+
+            var normalized = store.Trim();
+
+            // Segurança: garante que a Store do body seja a mesma da rota
+            body.Store = normalized;
+            body.UpdatedAt = DateTime.UtcNow;
+
+            var existing = await _context.PaymentConfigs
+                .FirstOrDefaultAsync(p => p.Store == normalized);
+
+            if (existing == null)
+            {
+                // Cria novo
+                _context.PaymentConfigs.Add(body);
+            }
+            else
+            {
+                // Atualiza campos relevantes
+                existing.Cnpj = body.Cnpj;
+                existing.Provider = string.IsNullOrWhiteSpace(body.Provider) ? existing.Provider : body.Provider;
+
+                existing.MpPublicKey = body.MpPublicKey;
+                existing.MpAccessToken = body.MpAccessToken;
+
+                existing.PixKey = body.PixKey;
+                existing.BankName = body.BankName;
+                existing.BankClientId = body.BankClientId;
+                existing.BankClientSecret = body.BankClientSecret;
+                existing.BankCertPath = body.BankCertPath;
+                existing.BankCertPassword = body.BankCertPassword;
+
+                existing.IsActive = body.IsActive;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Configuração de pagamento salva com sucesso.", store = normalized });
+        }
+
+        // DELETE: api/paymentconfigs/{store}
+        [HttpDelete("{store}")]
+        public async Task<IActionResult> Delete(string store)
+        {
+            if (string.IsNullOrWhiteSpace(store))
+                return BadRequest(new { message = "Parâmetro 'store' é obrigatório." });
+
+            var normalized = store.Trim();
+
+            var existing = await _context.PaymentConfigs
+                .FirstOrDefaultAsync(p => p.Store == normalized);
+
+            if (existing == null)
+                return NotFound(new { message = $"Nenhuma configuração encontrada para a loja '{normalized}'." });
+
+            _context.PaymentConfigs.Remove(existing);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Configuração removida com sucesso.", store = normalized });
         }
     }
 }
 
 ```
 
-Services/MercadoPagoService.cs:
+./Services/MercadoPagoService.cs:
 ```cs
 // CSharpAssistant.API/Services/MercadoPagoService.cs
 using System;
@@ -885,7 +1039,7 @@ namespace CSharpAssistant.API.Services
 
 ```
 
-Program.cs:
+./Program.cs:
 ```cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
@@ -1076,7 +1230,7 @@ app.Run();
 
 ```
 
-Models/Order.cs:
+./Models/Order.cs:
 ```cs
 using System.Collections.Generic;
 
@@ -1103,6 +1257,208 @@ public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public List<OrderItem> Items { get; set; } = new();
     }
+}
+
+```
+
+./Models/PaymentConfig.cs:
+```cs
+using System;
+
+namespace CSharpAssistant.API.Models
+{
+    public class PaymentConfig
+    {
+        public int Id { get; set; }
+
+        // Nome da loja exatamente como você usa nos pedidos (Ex.: "Efapi", "Palmital", "Passo dos Fortes")
+        public string Store { get; set; } = string.Empty;
+
+        // CNPJ da loja (somente números ou com máscara — você decide)
+        public string Cnpj { get; set; } = string.Empty;
+
+        // Provedor: "mercadopago" (padrão agora) ou "pix_banco" (futuro)
+        public string Provider { get; set; } = "mercadopago";
+
+        // ---- Credenciais Mercado Pago (uma conta por CNPJ) ----
+        public string? MpPublicKey { get; set; }
+        public string? MpAccessToken { get; set; }
+
+        // ---- PIX do banco (para futuro) ----
+        public string? PixKey { get; set; }         // chave EVP/CNPJ
+        public string? BankName { get; set; }       // ex.: "Sicredi", "Itaú"
+        public string? BankClientId { get; set; }
+        public string? BankClientSecret { get; set; }
+        public string? BankCertPath { get; set; }   // se o banco exigir certificado mTLS
+        public string? BankCertPassword { get; set; }
+
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+    }
+}
+
+```
+
+./DTOs/OrderCreateDTO.cs:
+```cs
+using System.Collections.Generic;
+
+namespace CSharpAssistant.API.DTOs
+{
+    public class OrderCreateDTO
+    {
+        public string Store { get; set; }
+        public string CustomerName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string DeliveryType { get; set; }
+        public string? Address { get; set; }
+        public string? Street { get; set; }
+        public string? Number { get; set; }
+        public string? Complement { get; set; }
+        public decimal Total { get; set; }
+        public decimal DeliveryFee { get; set; }
+
+        public List<OrderItemDTO> Items { get; set; }
+    }
+}
+
+```
+
+./DTOs/OrderDTO.cs:
+```cs
+using System;
+using System.Collections.Generic;
+
+namespace CSharpAssistant.API.DTOs
+{
+    public class OrderDTO
+    {
+        public int Id { get; set; }
+
+        public string Store { get; set; }
+
+        public string Name { get; set; }
+
+        public string PhoneNumber { get; set; }
+
+        public string DeliveryType { get; set; }
+
+        public string Address { get; set; }
+
+        public decimal Total { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string Status { get; set; }
+        // DTOs/OrderDTO.cs
+
+public string? CustomerName { get; set; }
+public string? Street { get; set; }
+public string? Number { get; set; }
+public string? Complement { get; set; }
+
+
+        public DateTime CreatedAt { get; set; }
+
+        public List<OrderItemDTO> Items { get; set; }
+        
+    }
+}
+
+```
+
+./Data/AppDbContext.cs:
+```cs
+//CSharpAssistant.API/Data/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Models;
+
+namespace CSharpAssistant.API.Data
+{
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        public DbSet<Product> Products { get; set; }
+
+        public DbSet<Category> Categories { get; set; }
+
+        public DbSet<Subcategory> Subcategories { get; set; }
+
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+
+        public DbSet<OrderItem> OrderItems { get; set; }
+
+        public DbSet<StoreStock> StoreStocks { get; set; }
+
+        public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
+
+        public DbSet<Setting> Settings { get; set; }
+
+        // ✅ NOVO: Configurações de pagamento por loja (CNPJ/credenciais)
+        public DbSet<PaymentConfig> PaymentConfigs { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // 🔒 Opcional: índice único por Store (uma config por loja)
+            modelBuilder.Entity<PaymentConfig>()
+                .HasIndex(p => p.Store)
+                .IsUnique();
+        }
+    }
+}
+
+```
+
+./appsettings.json:
+```json
+
+{
+  "ConnectionStrings": {
+    "Default": "Host=dpg-d1668vgdl3ps73fgkqe0-a.oregon-postgres.render.com;Port=5432;Database=eskimo_db_oobc;Username=eskimo_user;Password=nEKbxb0rmzAz8puXzM9eFAiWO8WwFkvi;SSL Mode=Require;Trust Server Certificate=true"
+  },
+
+  "PublicBaseUrl": "https://backend-eskimo.onrender.com",
+  "FrontBaseUrl": "https://eskimochapeco.com.br",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "AllowedHosts": "*",
+
+  "Jwt": {
+    "Key": "minhaChaveUltraSecreta1234567890!!!",
+    "Issuer": "ecommerce-api",
+    "Audience": "ecommerce-client"
+  }
+}
+
+```
+
+./appsettings.Development.json:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=localhost;Port=5432;Database=volpedb;Username=volpeuser;Password=volpepass"
+  },
+
+  "PublicBaseUrl": "http://localhost:8080",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
 }
 
 ```

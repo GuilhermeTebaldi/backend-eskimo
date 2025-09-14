@@ -262,6 +262,7 @@
 │   ├── OrderItemDTO.cs
 │   ├── ProductDTO.cs
 │   └── RegisterDTO.cs
+├── dump_projeto_API.txt
 ├── e-commerce.csproj
 ├── estrutura_pastas.txt
 ├── fake.pem
@@ -367,4 +368,4 @@
     ├── ProductService.cs
     └── TokenService.cs
 
-58 directories, 310 files
+58 directories, 311 files

@@ -157,6 +157,28 @@ namespace CSharpAssistant.API.Controllers
             if (string.IsNullOrWhiteSpace(front))
                 front = $"{Request.Scheme}://{Request.Host}";
             var dest = front.TrimEnd('/');
+// Tentativa de confirmação imediata: se temos paymentId, checar status e marcar como pago
+try
+{
+    if (orderId is int id2 && !string.IsNullOrWhiteSpace(paymentId))
+    {
+        var info = await _mp.TryGetPaymentStatusAsync(paymentId);
+        if (info != null && info.Value.externalReference == id2.ToString() &&
+            string.Equals(info.Value.status, "approved", StringComparison.OrdinalIgnoreCase))
+        {
+            var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id2);
+            if (order != null && !string.Equals(order.Status, "entregue", StringComparison.OrdinalIgnoreCase))
+            {
+                order.Status = "pago";
+                await _db.SaveChangesAsync();
+            }
+        }
+    }
+}
+catch (Exception ex)
+{
+    _logger.LogWarning(ex, "Falha ao confirmar pedido no retorno imediato.");
+}
 
             return orderId is int id
                 ? Redirect($"{dest}/?orderId={id}&paid=1")
