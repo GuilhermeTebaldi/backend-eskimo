@@ -115,22 +115,32 @@ namespace CSharpAssistant.API.Services
                 shipments = new { cost = deliveryFee, mode = "not_specified" };
             }
 
-            var preference = new
-            {
-                items,
-                payer = new { name = order.CustomerName },
-                external_reference = order.Id.ToString(),
-                back_urls = new
-                {
-                    success = $"{publicBaseUrl}/api/payments/mp/return/success",
-                    failure = $"{publicBaseUrl}/api/payments/mp/return/failure",
-                    pending = $"{publicBaseUrl}/api/payments/mp/return/pending"
-                },
-                auto_return = "approved",
-                notification_url = $"{publicBaseUrl}/api/payments/mp/webhook",
-                shipments,
-                payment_methods = new { installments = 12, default_installments = 1 }
-            };
+           var preference = new
+{
+    items,
+    payer = new { name = order.CustomerName },
+    external_reference = order.Id.ToString(),
+    back_urls = new
+    {
+        success = $"{publicBaseUrl}/api/payments/mp/return/success",
+        failure = $"{publicBaseUrl}/api/payments/mp/return/failure",
+        pending = $"{publicBaseUrl}/api/payments/mp/return/pending"
+    },
+    auto_return = "approved",
+    notification_url = $"{publicBaseUrl}/api/payments/mp/webhook",
+    shipments,
+    // Ajuda a não ficar em "pending" intermediário em cartão; no PIX ele vira approved ao pagar
+    binary_mode = true,
+    payment_methods = new
+    {
+        // não excluímos 'credit_card' nem 'ticket', deixamos tudo habilitado
+        installments = 12,
+        default_installments = 1
+    },
+    // Melhora a identificação no extrato do cliente
+    statement_descriptor = "ESKIMO-CHAPECO"
+};
+
 
             var json = JsonSerializer.Serialize(preference, _jsonOpts);
 

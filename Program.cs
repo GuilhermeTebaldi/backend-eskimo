@@ -81,8 +81,8 @@ builder.Services.AddCors(options =>
             "https://site-eskimo.vercel.app"
         )
         .AllowAnyHeader()
-        .AllowAnyMethod();
-        // .AllowCredentials(); // habilite se precisar enviar cookies/autenticação cross-site
+        .AllowAnyMethod()
+         .AllowCredentials(); // habilite se precisar enviar cookies/autenticação cross-site
     });
 });
 
