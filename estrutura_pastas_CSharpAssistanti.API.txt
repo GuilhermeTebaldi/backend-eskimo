@@ -262,8 +262,8 @@
 │   ├── OrderItemDTO.cs
 │   ├── ProductDTO.cs
 │   └── RegisterDTO.cs
-├── dump_projeto_API.txt
 ├── e-commerce.csproj
+├── estrutura_pastas_CSharpAssistant.API.txt
 ├── estrutura_pastas.txt
 ├── fake.pem
 ├── Helpers

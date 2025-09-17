@@ -1,6 +1,12 @@
 // CSharpAssistant.API/Controllers/PaymentsController.cs
 using System;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using CSharpAssistant.API.Models;
+
 using System.Threading.Tasks;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Services;
@@ -157,32 +163,48 @@ namespace CSharpAssistant.API.Controllers
             if (string.IsNullOrWhiteSpace(front))
                 front = $"{Request.Scheme}://{Request.Host}";
             var dest = front.TrimEnd('/');
-// Tentativa de confirmação imediata: se temos paymentId, checar status e marcar como pago
-try
-{
-    if (orderId is int id2 && !string.IsNullOrWhiteSpace(paymentId))
-    {
-        var info = await _mp.TryGetPaymentStatusAsync(paymentId);
-        if (info != null && info.Value.externalReference == id2.ToString() &&
-            string.Equals(info.Value.status, "approved", StringComparison.OrdinalIgnoreCase))
-        {
-            var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id2);
-            if (order != null && !string.Equals(order.Status, "entregue", StringComparison.OrdinalIgnoreCase))
+            // Tentativa de confirmação imediata: se temos paymentId, checar status e marcar como pago
+            try
             {
-                order.Status = "pago";
-                await _db.SaveChangesAsync();
+                if (orderId is int id2 && !string.IsNullOrWhiteSpace(paymentId))
+                {
+                    var info = await _mp.TryGetPaymentStatusAsync(paymentId);
+                    if (info != null && info.Value.externalReference == id2.ToString() &&
+                        string.Equals(info.Value.status, "approved", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id2);
+                        if (order != null && !string.Equals(order.Status, "entregue", StringComparison.OrdinalIgnoreCase))
+                        {
+                            order.Status = "pago";
+                            await _db.SaveChangesAsync();
+                        }
+                    }
+                }
             }
-        }
-    }
-}
-catch (Exception ex)
-{
-    _logger.LogWarning(ex, "Falha ao confirmar pedido no retorno imediato.");
-}
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Falha ao confirmar pedido no retorno imediato.");
+            }
+
+            var approved = false;
+            try
+            {
+                if (orderId is int id3 && !string.IsNullOrWhiteSpace(paymentId))
+                {
+                    var info2 = await _mp.TryGetPaymentStatusAsync(paymentId);
+                    approved = info2 != null
+                        && info2.Value.externalReference == id3.ToString()
+                        && string.Equals(info2.Value.status, "approved", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch { /* ignore */ }
 
             return orderId is int id
-                ? Redirect($"{dest}/?orderId={id}&paid=1")
-                : Redirect($"{dest}/?paid=1");
+                ? Redirect(approved
+                    ? $"{dest}/?orderId={id}&paid=1"
+                    : $"{dest}/?orderId={id}")
+                : Redirect(dest);
+
         }
 
         // Webhook MP
@@ -226,7 +248,7 @@ catch (Exception ex)
                             var root = json.RootElement;
                             paymentId ??= root.GetPropertyOrDefault("data")?.GetPropertyOrDefault("id")?.GetString()
                                       ?? root.GetPropertyOrDefault("id")?.GetString();
-                            evtType  ??= root.GetPropertyOrDefault("type")?.GetString();
+                            evtType ??= root.GetPropertyOrDefault("type")?.GetString();
                             _logger.LogInformation("Webhook MP body. type={type}, id={paymentId}", evtType, paymentId);
                         }
                     }
@@ -272,6 +294,19 @@ catch (Exception ex)
                                 order.Status = "pago";
                                 await _db.SaveChangesAsync();
                                 _logger.LogInformation("Order {orderId} -> PAGO (payment {paymentId}).", orderId, paymentId);
+                                try
+                                {
+                                    var okWhats = await TrySendWhatsAppPaymentConfirmationAsync(order, CancellationToken.None);
+                                    if (okWhats)
+                                        _logger.LogInformation("WhatsApp enviado para order {orderId}.", orderId);
+                                    else
+                                        _logger.LogInformation("WhatsApp não enviado para order {orderId}.", orderId);
+                                }
+                                catch (Exception exWhats)
+                                {
+                                    _logger.LogWarning(exWhats, "Falha ao enviar WhatsApp para order {orderId}", orderId);
+                                }
+
                             }
                         }
                         else if (string.Equals(status, "rejected", StringComparison.OrdinalIgnoreCase))
@@ -300,7 +335,76 @@ catch (Exception ex)
                 _logger.LogError(ex, "Erro no webhook MP.");
                 return Ok(); // 200 para evitar retry agressivo
             }
+
         }
+                private async Task<bool> TrySendWhatsAppPaymentConfirmationAsync(Order order, CancellationToken ct)
+        {
+            try
+            {
+                if (order == null) return false;
+                if (string.IsNullOrWhiteSpace(order.PhoneNumber)) return false;
+
+                // evita duplicidade
+                if (order.WhatsappNotifiedAt.HasValue) return false;
+
+                var storeSlug = (order.Store ?? "").Trim().ToLower();
+
+                var cfg = await _db.Set<PaymentConfig>()
+                    .AsNoTracking()
+                    .Where(c =>
+                        (c.Store ?? "").Trim().ToLower() == storeSlug &&
+                        c.IsActive &&
+                        !string.IsNullOrWhiteSpace(c.WhatsappAccessToken) &&
+                        !string.IsNullOrWhiteSpace(c.WhatsappPhoneNumberId))
+                    .OrderByDescending(c => c.UpdatedAt)
+                    .FirstOrDefaultAsync(ct);
+
+                if (cfg == null) return false;
+
+                var to = NormalizePhone(order.PhoneNumber!);
+                if (string.IsNullOrWhiteSpace(to)) return false;
+
+                var bodyObj = new
+                {
+                    messaging_product = "whatsapp",
+                    to = to,
+                    type = "text",
+                    text = new { body = $"Pedido #{order.Id} pago. Estamos preparando seu pedido! Loja: {order.Store}." }
+                };
+
+                using var client = new HttpClient();
+                using var req = new HttpRequestMessage(HttpMethod.Post, $"https://graph.facebook.com/v20.0/{cfg.WhatsappPhoneNumberId}/messages");
+                req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", cfg.WhatsappAccessToken);
+                req.Content = new StringContent(JsonSerializer.Serialize(bodyObj), Encoding.UTF8, "application/json");
+
+                using var resp = await client.SendAsync(req, ct);
+                if (!resp.IsSuccessStatusCode) return false;
+
+                // marca como enviado
+                var tracked = await _db.Orders.FirstOrDefaultAsync(o => o.Id == order.Id, ct);
+                if (tracked != null)
+                {
+                    tracked.WhatsappNotifiedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync(ct);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string NormalizePhone(string raw)
+        {
+            var digits = new string((raw ?? "").Where(char.IsDigit).ToArray());
+            if (string.IsNullOrEmpty(digits)) return "";
+            if (digits.StartsWith("55")) return digits;
+            if (digits.Length >= 10 && digits.Length <= 11) return "55" + digits;
+            return digits;
+        }
+
     }
 
     internal static class JsonElementExt

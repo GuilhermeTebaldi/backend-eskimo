@@ -125,6 +125,8 @@ namespace CSharpAssistant.API.Controllers
                     order.PhoneNumber,
                     order.DeliveryFee,
                     order.CreatedAt,
+                    order.WhatsappNotifiedAt,
+
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
@@ -277,6 +279,8 @@ namespace CSharpAssistant.API.Controllers
                 order.Total,
                 order.DeliveryFee,
                 order.PhoneNumber,
+                order.WhatsappNotifiedAt,
+
                 Items = order.Items.Select(i => new
                 {
                     i.ProductId,

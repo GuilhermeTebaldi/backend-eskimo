@@ -26,6 +26,10 @@ namespace CSharpAssistant.API.Models
         public string? BankClientSecret { get; set; }
         public string? BankCertPath { get; set; }   // se o banco exigir certificado mTLS
         public string? BankCertPassword { get; set; }
+        // ---- WhatsApp Cloud API (opcional) ----
+        public string? WhatsappStoreNumber { get; set; }
+        public string? WhatsappPhoneNumberId { get; set; }
+        public string? WhatsappAccessToken { get; set; }
 
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
