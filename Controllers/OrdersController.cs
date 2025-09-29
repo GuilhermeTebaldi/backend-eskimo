@@ -24,14 +24,10 @@ namespace CSharpAssistant.API.Controllers
         public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO dto)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             if (dto.Items == null || !dto.Items.Any())
-            {
                 return BadRequest(new { message = "O pedido deve conter pelo menos um item." });
-            }
 
             // ✅ Validação condicional para pedidos de entrega
             if (dto.DeliveryType == "entregar")
@@ -52,9 +48,18 @@ namespace CSharpAssistant.API.Controllers
                     .FirstOrDefaultAsync(s => s.ProductId == item.ProductId && s.Store == dto.Store);
 
                 if (stock == null || stock.Quantity < item.Quantity)
-                {
                     return BadRequest(new { message = $"Estoque insuficiente para o produto {item.Name}. Quantidade disponível: {stock?.Quantity ?? 0}" });
-                }
+            }
+
+            // 💰 Calcula frete impondo mínimo no servidor (fonte da verdade)
+            decimal fee = 0m;
+            if (dto.DeliveryType == "entregar")
+            {
+                var settings = await _context.Settings.FirstOrDefaultAsync();
+                var min = settings?.MinDelivery ?? 0m;
+
+                var clientFee = dto.DeliveryFee > 0m ? dto.DeliveryFee : 0m;
+                fee = clientFee > min ? clientFee : min; // max(cliente, mínimo)
             }
 
             var order = new Order
@@ -67,7 +72,7 @@ namespace CSharpAssistant.API.Controllers
                 Complement = dto.Complement,
                 Store = dto.Store,
                 Total = dto.Total,
-                DeliveryFee = dto.DeliveryFee,
+                DeliveryFee = fee,
                 Status = "pendente",
                 PhoneNumber = dto.PhoneNumber,
                 Items = dto.Items.Select(i => new OrderItem
@@ -126,7 +131,6 @@ namespace CSharpAssistant.API.Controllers
                     order.DeliveryFee,
                     order.CreatedAt,
                     order.WhatsappNotifiedAt,
-
                     Items = order.Items.Select(item => new
                     {
                         item.ProductId,
@@ -280,7 +284,6 @@ namespace CSharpAssistant.API.Controllers
                 order.DeliveryFee,
                 order.PhoneNumber,
                 order.WhatsappNotifiedAt,
-
                 Items = order.Items.Select(i => new
                 {
                     i.ProductId,
