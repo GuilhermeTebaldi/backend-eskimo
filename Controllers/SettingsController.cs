@@ -30,27 +30,38 @@ namespace CSharpAssistant.API.Models
             return Ok(setting);
         }
 
-        // PUT: api/settings
-        [HttpPut]
-        public async Task<IActionResult> UpdateSetting([FromBody] Setting updated)
-        {
-            var setting = await _context.Settings.FirstOrDefaultAsync();
-            if (setting == null)
-            {
-                updated.CreatedAt = DateTime.UtcNow;
-                updated.UpdatedAt = DateTime.UtcNow;
-                _context.Settings.Add(updated);
-            }
-            else
-            {
-                setting.DeliveryRate = updated.DeliveryRate;
-                setting.UpdatedAt = DateTime.UtcNow;
-                _context.Settings.Update(setting);
-            }
+       // PUT: api/settings
+[HttpPut]
+public async Task<IActionResult> UpdateSetting([FromBody] Setting updated)
+{
+    // Normaliza entradas
+    var safeRate = Math.Max(0m, updated.DeliveryRate);
+    var safeMin  = Math.Max(0m, updated.MinDelivery);
 
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Configuração atualizada com sucesso." });
-        }
+    var setting = await _context.Settings.FirstOrDefaultAsync();
+    if (setting == null)
+    {
+        setting = new Setting
+        {
+            DeliveryRate = safeRate,
+            MinDelivery  = safeMin,
+            CreatedAt    = DateTime.UtcNow,
+            UpdatedAt    = DateTime.UtcNow
+        };
+        _context.Settings.Add(setting);
+    }
+    else
+    {
+        setting.DeliveryRate = safeRate;
+        setting.MinDelivery  = safeMin;
+        setting.UpdatedAt    = DateTime.UtcNow;
+        _context.Settings.Update(setting);
+    }
+
+    await _context.SaveChangesAsync();
+    return Ok(new { message = "Configuração atualizada com sucesso." });
+}
+
 
         // DELETE: api/settings
         [HttpDelete]
