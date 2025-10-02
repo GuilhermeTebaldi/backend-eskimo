@@ -1,16 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Services;
-using CSharpAssistant.API.Models;
 
-
-using System.Linq;
-namespace CSharpAssistant.API.Models
-
+namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -34,9 +32,9 @@ namespace CSharpAssistant.API.Models
             [FromQuery] string? store = null)
         {
             var result = _productService.GetAllProducts(name, page, pageSize, store)
-    .OrderByDescending(p => p.PinnedTop ?? false)
-    .ThenBy(p => p.SortRank ?? int.MaxValue)
-    .ThenBy(p => p.Name);
+                .OrderByDescending(p => p.PinnedTop ?? false)
+                .ThenBy(p => p.SortRank ?? int.MaxValue)
+                .ThenBy(p => p.Name);
 
             return Ok(result);
         }
@@ -61,7 +59,7 @@ namespace CSharpAssistant.API.Models
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
-            // Criar estoques iguais para cada loja com valor default (ex: 0)
+            // Estoques iniciais por loja
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
                 _context.StoreStocks.Add(new StoreStock
@@ -128,7 +126,7 @@ namespace CSharpAssistant.API.Models
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = 0, // Valor fixo ou ignorado
+                Stock = 0,
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
@@ -174,6 +172,49 @@ namespace CSharpAssistant.API.Models
 
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+        // 💾 PUT: /api/storefront/layout
+        // Body:
+        // {
+        //   "items": {
+        //     "123": { "sortRank": 0, "pinnedTop": true },
+        //     "456": { "sortRank": 1, "pinnedTop": false }
+        //   }
+        // }
+        [HttpPut("~/api/storefront/layout")]
+        public async Task<IActionResult> UpdateStorefrontLayout([FromBody] StorefrontLayoutPayload payload)
+        {
+            if (payload?.Items == null || payload.Items.Count == 0)
+                return BadRequest("Payload vazio.");
+
+            var ids = payload.Items.Keys.ToList();
+
+            var products = await _context.Products
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+
+            foreach (var p in products)
+            {
+                if (!payload.Items.TryGetValue(p.Id, out var it)) continue;
+                if (it.SortRank.HasValue) p.SortRank = it.SortRank;
+                if (it.PinnedTop.HasValue) p.PinnedTop = it.PinnedTop;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { updated = products.Count });
+        }
+
+        // DTOs para payload do layout
+        public class StorefrontLayoutPayload
+        {
+            public Dictionary<int, StorefrontLayoutItem> Items { get; set; } = new();
+        }
+
+        public class StorefrontLayoutItem
+        {
+            public int? SortRank { get; set; }
+            public bool? PinnedTop { get; set; }
         }
     }
 }

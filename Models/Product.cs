@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CSharpAssistant.API.Models
 {
@@ -10,18 +9,22 @@ namespace CSharpAssistant.API.Models
 
         [Required]
         public string Name { get; set; }
-        
+
         public string? Description { get; set; }
-        
+
         public decimal Price { get; set; }
-        
+
         public string? ImageUrl { get; set; }
-        
+
         public int? Stock { get; set; }
 
         public int? CategoryId { get; set; }
 
         public int? SubcategoryId { get; set; }
+
+        // Novo: controle de layout na vitrine
+        public int? SortRank { get; set; }
+        public bool? PinnedTop { get; set; }
 
         public Category? Category { get; set; }
 
