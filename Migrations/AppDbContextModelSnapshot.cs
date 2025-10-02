@@ -227,14 +227,8 @@ namespace ecommerce.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool?>("PinnedTop")
-                        .HasColumnType("boolean");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
-
-                    b.Property<int?>("SortRank")
-                        .HasColumnType("integer");
 
                     b.Property<int?>("Stock")
                         .HasColumnType("integer");
@@ -287,26 +281,16 @@ namespace ecommerce.Migrations
                     b.Property<bool>("IsVisible")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("PinnedTop")
-                        .HasColumnType("boolean");
-
                     b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SortRank")
                         .HasColumnType("integer");
 
                     b.Property<string>("Store")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("StyleJson")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId", "Store")
-                        .IsUnique();
+                    b.HasIndex("ProductId");
 
                     b.ToTable("StoreProductVisibilities");
                 });
