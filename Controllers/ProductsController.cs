@@ -150,31 +150,31 @@ namespace CSharpAssistant.API.Controllers
         }
 
         // POST: api/products/5/visibility
-        [HttpPost("{id}/visibility")]
-        public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
+       // CSharpAssistant.API/Controllers/ProductsController.cs (trecho)
+[HttpPost("{id}/visibility")]
+public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
+{
+    var product = await _context.Products
+        .Include(p => p.Visibilities)
+        .FirstOrDefaultAsync(p => p.Id == id);
+    if (product == null) return NotFound();
+
+    if (product.Visibilities != null && product.Visibilities.Any())
+        _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
+
+    foreach (var store in stores.Distinct())
+    {
+        _context.StoreProductVisibilities.Add(new StoreProductVisibility
         {
-            var product = await _context.Products
-                .Include(p => p.Visibilities)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            ProductId = id,
+            Store = store,
+            IsVisible = true
+        });
+    }
 
-            if (product == null) return NotFound();
-
-            if (product.Visibilities != null && product.Visibilities.Any())
-                _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
-
-            foreach (var store in stores.Distinct())
-            {
-                _context.StoreProductVisibilities.Add(new StoreProductVisibility
-                {
-                    ProductId = id,
-                    Store = store,
-                    IsVisible = true
-                });
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
+    await _context.SaveChangesAsync();
+    return Ok();
+}
 
         // PUT: /api/storefront/layout
         [HttpPut("~/api/storefront/layout")]
