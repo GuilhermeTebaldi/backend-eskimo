@@ -13,6 +13,7 @@ namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("[controller]")] // compat opcional se baseURL já inclui /api
     public class ProductsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -24,7 +25,7 @@ namespace CSharpAssistant.API.Controllers
             _productService = productService;
         }
 
-        // 📦 GET: api/products/list?store=efapi
+        // 📦 GET: /api/products/list?store=efapi
         [HttpGet("list")]
         public IActionResult GetFiltered(
             [FromQuery] string? name,
@@ -36,7 +37,7 @@ namespace CSharpAssistant.API.Controllers
             return Ok(result);
         }
 
-        // 📦 POST: api/products
+        // 📦 POST: /api/products
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Product product)
         {
@@ -56,23 +57,16 @@ namespace CSharpAssistant.API.Controllers
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
-            // estoques iniciais por loja
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
-                _context.StoreStocks.Add(new StoreStock
-                {
-                    ProductId = entity.Id,
-                    Store = store,
-                    Quantity = 0
-                });
+                _context.StoreStocks.Add(new StoreStock { ProductId = entity.Id, Store = store, Quantity = 0 });
             }
 
             await _context.SaveChangesAsync();
-
             return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
         }
 
-        // 🛠 PUT: api/products/5
+        // 🛠 PUT: /api/products/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Product updated)
         {
@@ -91,7 +85,7 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
-        // 🗑 DELETE: api/products/5
+        // 🗑 DELETE: /api/products/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -104,7 +98,7 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
-        // 📦 GET: api/products/5
+        // 📦 GET: /api/products/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -133,7 +127,7 @@ namespace CSharpAssistant.API.Controllers
             return Ok(dto);
         }
 
-        // 👁️‍🗨️ GET: api/products/5/visibility
+        // 👁️‍🗨️ GET: /api/products/{id}/visibility
         [HttpGet("{id}/visibility")]
         public async Task<IActionResult> GetVisibility(int id)
         {
@@ -145,7 +139,7 @@ namespace CSharpAssistant.API.Controllers
             return Ok(stores);
         }
 
-        // ✅ POST: api/products/5/visibility
+        // ✅ POST: /api/products/{id}/visibility
         [HttpPost("{id}/visibility")]
         public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
         {
@@ -164,7 +158,8 @@ namespace CSharpAssistant.API.Controllers
                 _context.StoreProductVisibilities.Add(new StoreProductVisibility
                 {
                     ProductId = id,
-                    Store = store
+                    Store = store,
+                    IsVisible = true
                 });
             }
 

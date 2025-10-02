@@ -1,3 +1,4 @@
+// CSharpAssistant.API/Controllers/StockController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Data;
@@ -7,12 +8,13 @@ namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("[controller]")] // permite também /stock quando baseURL já inclui /api
     public class StockController : ControllerBase
     {
         private readonly AppDbContext _context;
         public StockController(AppDbContext context) { _context = context; }
 
-        // 🔎 GET: /api/stock
+        // 🔎 GET: /api/stock  (retorna chaves minúsculas: efapi/palmital/passo)
         [HttpGet]
         public async Task<IActionResult> GetAllStocks()
         {
@@ -21,23 +23,23 @@ namespace CSharpAssistant.API.Controllers
 
             var result = products.Select(p => new
             {
-                ProductId = p.Id,
-                ProductName = p.Name,
-                ImageUrl = p.ImageUrl,
-                Efapi = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "efapi")?.Quantity ?? 0,
-                Palmital = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "palmital")?.Quantity ?? 0,
-                Passo = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
+                productId = p.Id,
+                productName = p.Name,
+                imageUrl = p.ImageUrl,
+                efapi = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "efapi")?.Quantity ?? 0,
+                palmital = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "palmital")?.Quantity ?? 0,
+                passo = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
             });
 
             return Ok(result);
         }
 
-        // 💾 POST: /api/stock/{productId}
+        // 💾 POST: /api/stock/{productId}  (compatível com painel)
         [HttpPost("{productId}")]
         public Task<IActionResult> UpdateStockPost(int productId, [FromBody] Dictionary<string, int> payload)
             => UpdateStockInternal(productId, payload);
 
-        // 💾 PUT: /api/stock/{productId}  (compatível com o admin atual)
+        // 💾 PUT: /api/stock/{productId}   (compat extra)
         [HttpPut("{productId}")]
         public Task<IActionResult> UpdateStockPut(int productId, [FromBody] Dictionary<string, int> payload)
             => UpdateStockInternal(productId, payload);
@@ -58,18 +60,9 @@ namespace CSharpAssistant.API.Controllers
                     .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == key);
 
                 if (existingStock != null)
-                {
                     existingStock.Quantity = quantity;
-                }
                 else
-                {
-                    _context.StoreStocks.Add(new StoreStock
-                    {
-                        ProductId = productId,
-                        Store = key,
-                        Quantity = quantity
-                    });
-                }
+                    _context.StoreStocks.Add(new StoreStock { ProductId = productId, Store = key, Quantity = quantity });
 
                 var visibility = await _context.StoreProductVisibilities
                     .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == key);
@@ -77,18 +70,9 @@ namespace CSharpAssistant.API.Controllers
                 if (quantity > 0)
                 {
                     if (visibility == null)
-                    {
-                        _context.StoreProductVisibilities.Add(new StoreProductVisibility
-                        {
-                            ProductId = productId,
-                            Store = key,
-                            IsVisible = true
-                        });
-                    }
+                        _context.StoreProductVisibilities.Add(new StoreProductVisibility { ProductId = productId, Store = key, IsVisible = true });
                     else
-                    {
                         visibility.IsVisible = true;
-                    }
                 }
                 else
                 {

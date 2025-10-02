@@ -1,4 +1,4 @@
-// CSharpAssistant.API/Services/ProductService.cs
+// CSharpAssistant.API/Services/ProductService.cs  (inalterado no comportamento)
 using System.Collections.Generic;
 using System.Linq;
 using CSharpAssistant.API.Data;
@@ -23,12 +23,11 @@ namespace CSharpAssistant.API.Services
                 .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
-                .Include(p => p.StoreStocks) // estoques por loja
+                .Include(p => p.StoreStocks)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(store))
             {
-                // guarda nulos para evitar warnings/NullReference
                 query = query.Where(p =>
                     p.StoreStocks != null &&
                     p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0)
@@ -53,10 +52,7 @@ namespace CSharpAssistant.API.Services
                     ImageUrl = p.ImageUrl,
                     Stock = store != null
                         ? (p.StoreStocks != null
-                            ? p.StoreStocks
-                                .Where(s => s.Store == store)
-                                .Select(s => s.Quantity)
-                                .FirstOrDefault()
+                            ? p.StoreStocks.Where(s => s.Store == store).Select(s => s.Quantity).FirstOrDefault()
                             : 0)
                         : 0,
                     CategoryId = p.CategoryId,
