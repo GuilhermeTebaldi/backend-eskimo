@@ -1,16 +1,15 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+// CSharpAssistant.API/Controllers/ProductsController.cs
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Data;
+using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Services;
-using CSharpAssistant.API.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-
-using System.Linq;
-namespace CSharpAssistant.API.Models
-
+namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -57,7 +56,7 @@ namespace CSharpAssistant.API.Models
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
-            // Criar estoques iguais para cada loja com valor default (ex: 0)
+            // estoques iniciais por loja
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
                 _context.StoreStocks.Add(new StoreStock
@@ -124,7 +123,7 @@ namespace CSharpAssistant.API.Models
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = 0, // Valor fixo ou ignorado
+                Stock = 0,
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
@@ -157,7 +156,8 @@ namespace CSharpAssistant.API.Models
             if (product == null)
                 return NotFound();
 
-            _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
+            if (product.Visibilities != null && product.Visibilities.Any())
+                _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
 
             foreach (var store in stores)
             {

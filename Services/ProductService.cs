@@ -1,3 +1,6 @@
+// CSharpAssistant.API/Services/ProductService.cs
+using System.Collections.Generic;
+using System.Linq;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -13,27 +16,29 @@ namespace CSharpAssistant.API.Services
             _context = context;
         }
 
+        // Sem store => lista todos. Com store => só com estoque > 0 nessa loja.
         public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10, string? store = null)
         {
             var query = _context.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
-                .Include(p => p.StoreStocks) // ✅ Usa apenas estoques por loja
+                .Include(p => p.StoreStocks) // estoques por loja
                 .AsQueryable();
 
-            // ✅ Se tiver loja, só mostra produtos com estoque > 0
             if (!string.IsNullOrEmpty(store))
             {
+                // guarda nulos para evitar warnings/NullReference
                 query = query.Where(p =>
+                    p.StoreStocks != null &&
                     p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0)
                 );
             }
 
-            // 🔍 Filtro por nome do produto (opcional)
             if (!string.IsNullOrEmpty(nameFilter))
             {
-                nameFilter = nameFilter.ToLower();
-                query = query.Where(p => p.Name.ToLower().Contains(nameFilter));
+                var f = nameFilter.ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(f));
             }
 
             return query
@@ -47,10 +52,12 @@ namespace CSharpAssistant.API.Services
                     Price = p.Price,
                     ImageUrl = p.ImageUrl,
                     Stock = store != null
-                        ? p.StoreStocks
-                            .Where(s => s.Store == store)
-                            .Select(s => s.Quantity)
-                            .FirstOrDefault()
+                        ? (p.StoreStocks != null
+                            ? p.StoreStocks
+                                .Where(s => s.Store == store)
+                                .Select(s => s.Quantity)
+                                .FirstOrDefault()
+                            : 0)
                         : 0,
                     CategoryId = p.CategoryId,
                     CategoryName = p.Category != null ? p.Category.Name : null,
