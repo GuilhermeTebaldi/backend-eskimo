@@ -8,7 +8,7 @@ namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Route("[controller]")] // compat extra
+    [Route("[controller]")] // compat opcional
     public class StockController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -28,7 +28,7 @@ namespace CSharpAssistant.API.Controllers
                 imageUrl = p.ImageUrl,
                 efapi = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "efapi")?.Quantity ?? 0,
                 palmital = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "palmital")?.Quantity ?? 0,
-                passo = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
+                passo  = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
             });
 
             return Ok(result);
@@ -37,54 +37,41 @@ namespace CSharpAssistant.API.Controllers
         // POST: /api/stock/{productId}
         [HttpPost("{productId}")]
         public Task<IActionResult> UpdateStockPost(int productId, [FromBody] Dictionary<string, int> payload)
-            => UpdateStockInternal(productId, payload);
+            => UpsertStock(productId, payload);
 
         // PUT: /api/stock/{productId}
         [HttpPut("{productId}")]
         public Task<IActionResult> UpdateStockPut(int productId, [FromBody] Dictionary<string, int> payload)
-            => UpdateStockInternal(productId, payload);
+            => UpsertStock(productId, payload);
 
-        private async Task<IActionResult> UpdateStockInternal(int productId, Dictionary<string, int> stocks)
+        private async Task<IActionResult> UpsertStock(int productId, Dictionary<string, int> payload)
         {
-            if (stocks == null) return BadRequest("Payload inválido.");
+            if (payload == null) return BadRequest("Payload inválido.");
 
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-            if (product == null) return NotFound();
+            var productExists = await _context.Products.AnyAsync(p => p.Id == productId);
+            if (!productExists) return NotFound();
+
+            // Normaliza chaves do payload para minúsculas
+            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["efapi"] = 0,
+                ["palmital"] = 0,
+                ["passo"] = 0
+            };
+            foreach (var kv in payload)
+                map[kv.Key.ToLower()] = kv.Value;
 
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
-                var key = store.ToLower();
-                var quantity = stocks.TryGetValue(key, out var q) ? q : 0;
+                var qty = map.TryGetValue(store, out var v) ? v : 0;
 
-                // Upsert de estoque
-                var existingStock = await _context.StoreStocks
-                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == key);
+                var row = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == store);
 
-                if (existingStock != null)
-                {
-                    existingStock.Quantity = quantity;
-                }
+                if (row == null)
+                    _context.StoreStocks.Add(new StoreStock { ProductId = productId, Store = store, Quantity = qty });
                 else
-                {
-                    _context.StoreStocks.Add(new StoreStock { ProductId = productId, Store = key, Quantity = quantity });
-                }
-
-                // Visibilidade: NUNCA inserir aqui (banco produção não tem colunas extras).
-                var visibility = await _context.StoreProductVisibilities
-                    .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == key);
-
-                if (quantity > 0)
-                {
-                    // Se existir, garante ativo. Se não existir, ignora (sem INSERT).
-                    if (visibility != null)
-                        visibility.IsVisible = true;
-                }
-                else
-                {
-                    // Remove se existir
-                    if (visibility != null)
-                        _context.StoreProductVisibilities.Remove(visibility);
-                }
+                    row.Quantity = qty;
             }
 
             await _context.SaveChangesAsync();
