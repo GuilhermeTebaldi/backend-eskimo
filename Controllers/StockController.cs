@@ -10,18 +10,14 @@ namespace CSharpAssistant.API.Controllers
     public class StockController : ControllerBase
     {
         private readonly AppDbContext _context;
-
-        public StockController(AppDbContext context)
-        {
-            _context = context;
-        }
+        public StockController(AppDbContext context) { _context = context; }
 
         // 🔎 GET: /api/stock
         [HttpGet]
         public async Task<IActionResult> GetAllStocks()
         {
-            var products = await _context.Products.ToListAsync();
-            var stocks = await _context.StoreStocks.ToListAsync();
+            var products = await _context.Products.AsNoTracking().ToListAsync();
+            var stocks = await _context.StoreStocks.AsNoTracking().ToListAsync();
 
             var result = products.Select(p => new
             {
@@ -38,14 +34,28 @@ namespace CSharpAssistant.API.Controllers
 
         // 💾 POST: /api/stock/{productId}
         [HttpPost("{productId}")]
-        public async Task<IActionResult> UpdateStock(int productId, [FromBody] Dictionary<string, int> stocks)
+        public Task<IActionResult> UpdateStockPost(int productId, [FromBody] Dictionary<string, int> payload)
+            => UpdateStockInternal(productId, payload);
+
+        // 💾 PUT: /api/stock/{productId}  (compatível com o admin atual)
+        [HttpPut("{productId}")]
+        public Task<IActionResult> UpdateStockPut(int productId, [FromBody] Dictionary<string, int> payload)
+            => UpdateStockInternal(productId, payload);
+
+        private async Task<IActionResult> UpdateStockInternal(int productId, Dictionary<string, int> stocks)
         {
+            if (stocks == null) return BadRequest("Payload inválido.");
+
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            if (product == null) return NotFound();
+
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
-                var quantity = stocks.ContainsKey(store) ? stocks[store] : 0;
+                var key = store.ToLower();
+                var quantity = stocks.TryGetValue(key, out var q) ? q : 0;
 
                 var existingStock = await _context.StoreStocks
-                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == store.ToLower());
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == key);
 
                 if (existingStock != null)
                 {
@@ -56,13 +66,13 @@ namespace CSharpAssistant.API.Controllers
                     _context.StoreStocks.Add(new StoreStock
                     {
                         ProductId = productId,
-                        Store = store.ToLower(),
+                        Store = key,
                         Quantity = quantity
                     });
                 }
 
                 var visibility = await _context.StoreProductVisibilities
-                    .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == store.ToLower());
+                    .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == key);
 
                 if (quantity > 0)
                 {
@@ -71,16 +81,19 @@ namespace CSharpAssistant.API.Controllers
                         _context.StoreProductVisibilities.Add(new StoreProductVisibility
                         {
                             ProductId = productId,
-                            Store = store.ToLower()
+                            Store = key,
+                            IsVisible = true
                         });
+                    }
+                    else
+                    {
+                        visibility.IsVisible = true;
                     }
                 }
                 else
                 {
                     if (visibility != null)
-                    {
                         _context.StoreProductVisibilities.Remove(visibility);
-                    }
                 }
             }
 
