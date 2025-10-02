@@ -23,20 +23,27 @@ namespace CSharpAssistant.API.Data
         public DbSet<StoreStock> StoreStocks { get; set; }
 
         public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
+        
 
         public DbSet<Setting> Settings { get; set; }
 
         // ✅ NOVO: Configurações de pagamento por loja (CNPJ/credenciais)
         public DbSet<PaymentConfig> PaymentConfigs { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+               protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // 🔒 Garantir único ProductId+Store
+            modelBuilder.Entity<StoreProductVisibility>()
+                .HasIndex(v => new { v.ProductId, v.Store })
+                .IsUnique();
 
             // 🔒 Opcional: índice único por Store (uma config por loja)
             modelBuilder.Entity<PaymentConfig>()
                 .HasIndex(p => p.Store)
                 .IsUnique();
         }
+
     }
 }

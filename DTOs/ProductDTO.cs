@@ -3,7 +3,7 @@ namespace CSharpAssistant.API.DTOs
     public class ProductDTO
     {
         public int Id { get; set; }
-        
+
         public string Name { get; set; }
 
         public string? Description { get; set; }
@@ -25,5 +25,12 @@ namespace CSharpAssistant.API.DTOs
         public Dictionary<string, int>? StoreStocks { get; set; }
 
         public Dictionary<string, bool>? Visibilities { get; set; }
+                // Novo: layout/ordenação por loja
+        public int? SortRank { get; set; }
+
+        public bool? PinnedTop { get; set; }
+
+        public Dictionary<string, object>? Style { get; set; }
+
     }
 }

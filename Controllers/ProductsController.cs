@@ -33,7 +33,11 @@ namespace CSharpAssistant.API.Models
             [FromQuery] int pageSize = 100,
             [FromQuery] string? store = null)
         {
-            var result = _productService.GetAllProducts(name, page, pageSize, store);
+            var result = _productService.GetAllProducts(name, page, pageSize, store)
+    .OrderByDescending(p => p.PinnedTop ?? false)
+    .ThenBy(p => p.SortRank ?? int.MaxValue)
+    .ThenBy(p => p.Name);
+
             return Ok(result);
         }
 
