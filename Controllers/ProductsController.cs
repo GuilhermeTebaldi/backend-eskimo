@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
@@ -24,15 +25,18 @@ namespace CSharpAssistant.API.Controllers
             _productService = productService;
         }
 
-        // 📦 GET: api/products/list?store=efapi
+        // 📦 GET: api/products/list?store=efapi&mode=admin
         [HttpGet("list")]
         public IActionResult GetFiltered(
             [FromQuery] string? name,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 100,
-            [FromQuery] string? store = null)
+            [FromQuery] string? store = null,
+            [FromQuery] string? mode = null)
         {
-            var result = _productService.GetAllProducts(name, page, pageSize, store)
+            var adminMode = string.Equals(mode, "admin", StringComparison.OrdinalIgnoreCase);
+
+            var result = _productService.GetAllProducts(name, page, pageSize, store, adminMode)
                 .OrderByDescending(p => p.PinnedTop ?? false)
                 .ThenBy(p => p.SortRank ?? int.MaxValue)
                 .ThenBy(p => p.Name);
@@ -60,7 +64,6 @@ namespace CSharpAssistant.API.Controllers
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
-            // Estoques iniciais por loja
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
                 _context.StoreStocks.Add(new StoreStock
@@ -129,7 +132,7 @@ namespace CSharpAssistant.API.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = 0, // compat: preenchido via /list quando store é informado
+                Stock = 0,
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
@@ -189,13 +192,6 @@ namespace CSharpAssistant.API.Controllers
         }
 
         // 💾 PUT: /api/storefront/layout
-        // Body:
-        // {
-        //   "items": {
-        //     "123": { "sortRank": 0, "pinnedTop": true },
-        //     "456": { "sortRank": 1, "pinnedTop": false }
-        //   }
-        // }
         [HttpPut("~/api/storefront/layout")]
         public async Task<IActionResult> UpdateStorefrontLayout([FromBody] StorefrontLayoutPayload payload)
         {
@@ -219,7 +215,6 @@ namespace CSharpAssistant.API.Controllers
             return Ok(new { updated = products.Count });
         }
 
-        // DTOs para payload do layout
         public class StorefrontLayoutPayload
         {
             public Dictionary<int, StorefrontLayoutItem> Items { get; set; } = new();

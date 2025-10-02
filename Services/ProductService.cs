@@ -19,12 +19,14 @@ namespace CSharpAssistant.API.Services
 
         /// <summary>
         /// Lista produtos com filtro por nome, paginação e visão opcional por loja.
-        /// Retorna DTOs com:
-        /// - Stock (inteiro) quando "store" for informado, mantendo compatibilidade antiga.
-        /// - StoreStocks: dicionário completo de estoque por loja.
-        /// - Visibilities: dicionário de visibilidade por loja.
+        /// - Front (loja): quando "store" vier e adminMode=false, filtra por Quantity > 0.
+        /// - Admin: quando adminMode=true, não filtra por quantidade (mostra todos).
+        /// Sempre retorna:
+        /// - Stock: quantidade da loja quando "store" vier (compat).
+        /// - StoreStocks: dicionário completo por loja.
+        /// - Visibilities: dicionário por loja.
         /// </summary>
-        public IList<ProductDTO> GetAllProducts(string? name, int page, int pageSize, string? store)
+        public IList<ProductDTO> GetAllProducts(string? name, int page, int pageSize, string? store, bool adminMode = false)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 50;
@@ -47,8 +49,16 @@ namespace CSharpAssistant.API.Services
 
             if (!string.IsNullOrEmpty(store))
             {
-                // Mostra apenas produtos com alguma quantidade na loja indicada.
-                query = query.Where(p => p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0));
+                if (!adminMode)
+                {
+                    // Loja pública: só produtos com estoque > 0 na loja.
+                    query = query.Where(p => p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0));
+                }
+                else
+                {
+                    // Admin: apenas exige registro da loja, mesmo com 0.
+                    query = query.Where(p => p.StoreStocks.Any(s => s.Store == store));
+                }
             }
 
             var items = query
@@ -62,7 +72,7 @@ namespace CSharpAssistant.API.Services
                     Price = p.Price,
                     ImageUrl = p.ImageUrl,
 
-                    // Compatibilidade: quando "store" vier, popula Stock com a quantidade da loja.
+                    // Compat: quando "store" vier, popula Stock com a quantidade da loja.
                     Stock = store != null
                         ? p.StoreStocks
                             .Where(s => s.Store == store)
@@ -70,22 +80,14 @@ namespace CSharpAssistant.API.Services
                             .FirstOrDefault() ?? 0
                         : 0,
 
-                    // Mapa completo de estoques por loja usado pelo Admin.
                     StoreStocks = p.StoreStocks
                         .GroupBy(s => s.Store)
-                        .ToDictionary(
-                            g => g.Key,
-                            g => g.Select(x => x.Quantity).FirstOrDefault()
-                        ),
+                        .ToDictionary(g => g.Key, g => g.Select(x => x.Quantity).FirstOrDefault()),
 
-                    // Visibilidade por loja. Se não houver registros, retorna null.
                     Visibilities = p.Visibilities != null && p.Visibilities.Any()
                         ? p.Visibilities
                             .GroupBy(v => v.Store)
-                            .ToDictionary(
-                                g => g.Key,
-                                g => g.Select(x => x.IsVisible).FirstOrDefault()
-                            )
+                            .ToDictionary(g => g.Key, g => g.Select(x => x.IsVisible).FirstOrDefault())
                         : null,
 
                     CategoryId = p.CategoryId,
