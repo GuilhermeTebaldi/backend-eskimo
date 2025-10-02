@@ -8,13 +8,13 @@ namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Route("[controller]")] // permite também /stock quando baseURL já inclui /api
+    [Route("[controller]")] // compat extra
     public class StockController : ControllerBase
     {
         private readonly AppDbContext _context;
         public StockController(AppDbContext context) { _context = context; }
 
-        // 🔎 GET: /api/stock  (retorna chaves minúsculas: efapi/palmital/passo)
+        // GET: /api/stock
         [HttpGet]
         public async Task<IActionResult> GetAllStocks()
         {
@@ -34,12 +34,12 @@ namespace CSharpAssistant.API.Controllers
             return Ok(result);
         }
 
-        // 💾 POST: /api/stock/{productId}  (compatível com painel)
+        // POST: /api/stock/{productId}
         [HttpPost("{productId}")]
         public Task<IActionResult> UpdateStockPost(int productId, [FromBody] Dictionary<string, int> payload)
             => UpdateStockInternal(productId, payload);
 
-        // 💾 PUT: /api/stock/{productId}   (compat extra)
+        // PUT: /api/stock/{productId}
         [HttpPut("{productId}")]
         public Task<IActionResult> UpdateStockPut(int productId, [FromBody] Dictionary<string, int> payload)
             => UpdateStockInternal(productId, payload);
@@ -56,33 +56,39 @@ namespace CSharpAssistant.API.Controllers
                 var key = store.ToLower();
                 var quantity = stocks.TryGetValue(key, out var q) ? q : 0;
 
+                // Upsert de estoque
                 var existingStock = await _context.StoreStocks
                     .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == key);
 
                 if (existingStock != null)
+                {
                     existingStock.Quantity = quantity;
+                }
                 else
+                {
                     _context.StoreStocks.Add(new StoreStock { ProductId = productId, Store = key, Quantity = quantity });
+                }
 
+                // Visibilidade: NUNCA inserir aqui (banco produção não tem colunas extras).
                 var visibility = await _context.StoreProductVisibilities
                     .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == key);
 
                 if (quantity > 0)
                 {
-                    if (visibility == null)
-                        _context.StoreProductVisibilities.Add(new StoreProductVisibility { ProductId = productId, Store = key, IsVisible = true });
-                    else
+                    // Se existir, garante ativo. Se não existir, ignora (sem INSERT).
+                    if (visibility != null)
                         visibility.IsVisible = true;
                 }
                 else
                 {
+                    // Remove se existir
                     if (visibility != null)
                         _context.StoreProductVisibilities.Remove(visibility);
                 }
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Estoque e visibilidade atualizados com sucesso!" });
+            return Ok(new { message = "Estoque atualizado." });
         }
     }
 }
