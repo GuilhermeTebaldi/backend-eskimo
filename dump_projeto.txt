@@ -1,0 +1,1313 @@
+Models/Product.cs:
+```cs
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace CSharpAssistant.API.Models
+{
+    public class Product
+    {
+        public int Id { get; set; }
+
+        [Required] public string Name { get; set; }
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public string? ImageUrl { get; set; }
+        public int? Stock { get; set; }
+        public int? CategoryId { get; set; }
+        public int? SubcategoryId { get; set; }
+
+        // Layout
+        public int? SortRank { get; set; }
+        public bool? PinnedTop { get; set; }
+
+        public Category? Category { get; set; }
+        public Subcategory? Subcategory { get; set; }
+
+        public ICollection<StoreStock>? StoreStocks { get; set; }
+        public ICollection<StoreProductVisibility>? Visibilities { get; set; }
+    }
+}
+
+```
+
+Models/StoreStock.cs:
+```cs
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace CSharpAssistant.API.Models
+{
+    public class StoreStock
+    {
+        public int Id { get; set; }
+
+        public int ProductId { get; set; }
+
+        public string Store { get; set; } = string.Empty;
+
+        public int Quantity { get; set; }
+
+        public Product? Product { get; set; }
+    }
+}
+
+```
+
+Models/StoreProductVisibility.cs:
+```cs
+namespace CSharpAssistant.API.Models
+{
+    public class StoreProductVisibility
+    {
+        public int Id { get; set; }
+
+        public int ProductId { get; set; }
+
+        public string Store { get; set; } = string.Empty;
+
+        public bool IsVisible { get; set; }
+                // Novo: ordem e estilo
+        public int SortRank { get; set; } = 0;
+
+        public bool PinnedTop { get; set; } = false;
+
+        /// <summary>
+        /// JSON com estilos: { "cardVariant":"wide","accentColor":"#FF0000" }
+        /// </summary>
+        public string? StyleJson { get; set; }
+
+
+        public Product? Product { get; set; }
+    }
+}
+
+```
+
+Models/Subcategory.cs:
+```cs
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace CSharpAssistant.API.Models
+{
+    public class Subcategory
+    {
+        public int Id { get; set; }
+
+        [Required]
+        public string Name { get; set; }
+
+        public int CategoryId { get; set; }
+
+        public Category? Category { get; set; }
+    }
+}
+```
+
+Models/Setting.cs:
+```cs
+using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace CSharpAssistant.API.Models
+
+{
+   public class Setting
+{
+    public int Id { get; set; }
+
+    [Required]
+    public decimal DeliveryRate { get; set; }
+
+    // ✅ Novo: valor mínimo de entrega
+    public decimal MinDelivery { get; set; } = 0m;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+}
+
+```
+
+Models/Category.cs:
+```cs
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace CSharpAssistant.API.Models
+{
+    public class Category
+    {
+        public int Id { get; set; }
+
+        [Required]
+        public string Name { get; set; }
+
+        public ICollection<Product>? Products { get; set; }
+
+        public ICollection<Subcategory>? Subcategories { get; set; }
+    }
+}
+
+```
+
+Models/User.cs:
+```cs
+namespace CSharpAssistant.API.Models
+
+{
+    public class User
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
+        public string Role { get; set; } = "user"; // padrão
+    }
+}
+
+```
+
+DTOs/ProductDTO.cs:
+```cs
+using System.Collections.Generic;
+
+namespace CSharpAssistant.API.DTOs
+{
+    public class ProductDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public string? ImageUrl { get; set; }
+
+        public string? CategoryName { get; set; }
+        public string? SubcategoryName { get; set; }
+        public int? CategoryId { get; set; }
+        public int? SubcategoryId { get; set; }
+        public int? Stock { get; set; }
+
+        public Dictionary<string, int>? StoreStocks { get; set; }
+        public Dictionary<string, bool>? Visibilities { get; set; }
+
+        // Layout
+        public int? SortRank { get; set; }
+        public bool? PinnedTop { get; set; }
+
+        public Dictionary<string, object>? Style { get; set; }
+    }
+}
+
+```
+
+DTOs/OrderDTO.cs:
+```cs
+using System;
+using System.Collections.Generic;
+
+namespace CSharpAssistant.API.DTOs
+{
+    public class OrderDTO
+    {
+        public int Id { get; set; }
+
+        public string Store { get; set; }
+
+        public string Name { get; set; }
+
+        public string PhoneNumber { get; set; }
+
+        public string DeliveryType { get; set; }
+
+        public string Address { get; set; }
+
+        public decimal Total { get; set; }
+
+        public decimal DeliveryFee { get; set; }
+
+        public string Status { get; set; }
+        // DTOs/OrderDTO.cs
+
+public string? CustomerName { get; set; }
+public string? Street { get; set; }
+public string? Number { get; set; }
+public string? Complement { get; set; }
+
+
+        public DateTime CreatedAt { get; set; }
+
+        public List<OrderItemDTO> Items { get; set; }
+        
+    }
+}
+
+```
+
+DTOs/OrderItemDTO.cs:
+```cs
+namespace CSharpAssistant.API.DTOs
+{
+    public class OrderItemDTO
+    {
+        public int ProductId { get; set; }
+        public string Name { get; set; }
+
+
+       // public string? ProductName { get; set; }
+
+        public int Quantity { get; set; }
+
+        public decimal Price { get; set; }
+
+        public string? ImageUrl { get; set; }
+    }
+}
+
+```
+
+Data/EF (NÃO ENCONTRADO)
+
+Data/AppDbContext.cs:
+```cs
+//CSharpAssistant.API/Data/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Models;
+
+namespace CSharpAssistant.API.Data
+{
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        public DbSet<Product> Products { get; set; }
+
+        public DbSet<Category> Categories { get; set; }
+
+        public DbSet<Subcategory> Subcategories { get; set; }
+
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+
+        public DbSet<OrderItem> OrderItems { get; set; }
+
+        public DbSet<StoreStock> StoreStocks { get; set; }
+
+        public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
+        
+
+        public DbSet<Setting> Settings { get; set; }
+
+        // ✅ NOVO: Configurações de pagamento por loja (CNPJ/credenciais)
+        public DbSet<PaymentConfig> PaymentConfigs { get; set; }
+
+               protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // 🔒 Garantir único ProductId+Store
+            modelBuilder.Entity<StoreProductVisibility>()
+                .HasIndex(v => new { v.ProductId, v.Store })
+                .IsUnique();
+
+            // 🔒 Opcional: índice único por Store (uma config por loja)
+            modelBuilder.Entity<PaymentConfig>()
+                .HasIndex(p => p.Store)
+                .IsUnique();
+        }
+
+    }
+}
+
+```
+
+Migrations:
+Migrations
+├── 20250730144303_InitFinal.cs
+├── 20250730144303_InitFinal.Designer.cs
+├── 20250801181704_AddOrderCreatedAt.cs
+├── 20250801181704_AddOrderCreatedAt.Designer.cs
+├── 20250907130534_AddPaymentConfigPerStore.cs
+├── 20250907130534_AddPaymentConfigPerStore.Designer.cs
+├── 20250917180311_AddWhatsappNotifiedAt_AndWhatsFields.cs
+├── 20250917180311_AddWhatsappNotifiedAt_AndWhatsFields.Designer.cs
+├── 20250929120000_AddMinDeliveryToSettings.cs
+├── 20250929183211_AddMinDeliveryToSettings.Designer.cs
+├── 20251002154447_AddProductLayout.cs
+├── 20251002154447_AddProductLayout.Designer.cs
+├── 20251002162639_AddProductSortAndPin.cs
+├── 20251002162639_AddProductSortAndPin.Designer.cs
+├── 20251002164749_AddLayoutColumns.cs
+├── 20251002164749_AddLayoutColumns.Designer.cs
+└── AppDbContextModelSnapshot.cs
+
+1 directory, 17 files
+
+Controllers/ProductsController.cs:
+```cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using CSharpAssistant.API.DTOs;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+using CSharpAssistant.API.Services;
+
+namespace CSharpAssistant.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProductsController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+        private readonly ProductService _productService;
+
+        public ProductsController(AppDbContext context, ProductService productService)
+        {
+            _context = context;
+            _productService = productService;
+        }
+
+        // 📦 GET: api/products/list?store=efapi
+        [HttpGet("list")]
+        public IActionResult GetFiltered(
+            [FromQuery] string? name,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 100,
+            [FromQuery] string? store = null)
+        {
+            var result = _productService.GetAllProducts(name, page, pageSize, store)
+                .OrderByDescending(p => p.PinnedTop ?? false)
+                .ThenBy(p => p.SortRank ?? int.MaxValue)
+                .ThenBy(p => p.Name);
+
+            return Ok(result);
+        }
+
+        // 📦 POST: api/products
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] Product product)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var entity = new Product
+            {
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryId = product.CategoryId,
+                SubcategoryId = product.SubcategoryId
+            };
+
+            _context.Products.Add(entity);
+            await _context.SaveChangesAsync();
+
+            // Estoques iniciais por loja
+            foreach (var store in new[] { "efapi", "palmital", "passo" })
+            {
+                _context.StoreStocks.Add(new StoreStock
+                {
+                    ProductId = entity.Id,
+                    Store = store,
+                    Quantity = 0
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
+        }
+
+        // 🛠 PUT: api/products/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] Product updated)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound();
+
+            product.Name = updated.Name;
+            product.Description = updated.Description;
+            product.Price = updated.Price;
+            product.ImageUrl = updated.ImageUrl;
+            product.CategoryId = updated.CategoryId;
+            product.SubcategoryId = updated.SubcategoryId;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // 🗑 DELETE: api/products/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound();
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // 📦 GET: api/products/5
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Subcategory)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+                return NotFound();
+
+            var dto = new ProductDTO
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                Stock = 0,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name,
+                SubcategoryId = product.SubcategoryId,
+                SubcategoryName = product.Subcategory?.Name
+            };
+
+            return Ok(dto);
+        }
+
+        // 👁️‍🗨️ GET: api/products/5/visibility
+        [HttpGet("{id}/visibility")]
+        public async Task<IActionResult> GetVisibility(int id)
+        {
+            var stores = await _context.StoreProductVisibilities
+                .Where(v => v.ProductId == id)
+                .Select(v => v.Store)
+                .ToListAsync();
+
+            return Ok(stores);
+        }
+
+        // ✅ POST: api/products/5/visibility
+        [HttpPost("{id}/visibility")]
+        public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
+        {
+            var product = await _context.Products
+                .Include(p => p.Visibilities)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+                return NotFound();
+
+            _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
+
+            foreach (var store in stores)
+            {
+                _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                {
+                    ProductId = id,
+                    Store = store
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        // 💾 PUT: /api/storefront/layout
+        // Body:
+        // {
+        //   "items": {
+        //     "123": { "sortRank": 0, "pinnedTop": true },
+        //     "456": { "sortRank": 1, "pinnedTop": false }
+        //   }
+        // }
+        [HttpPut("~/api/storefront/layout")]
+        public async Task<IActionResult> UpdateStorefrontLayout([FromBody] StorefrontLayoutPayload payload)
+        {
+            if (payload?.Items == null || payload.Items.Count == 0)
+                return BadRequest("Payload vazio.");
+
+            var ids = payload.Items.Keys.ToList();
+
+            var products = await _context.Products
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+
+            foreach (var p in products)
+            {
+                if (!payload.Items.TryGetValue(p.Id, out var it)) continue;
+                if (it.SortRank.HasValue) p.SortRank = it.SortRank;
+                if (it.PinnedTop.HasValue) p.PinnedTop = it.PinnedTop;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { updated = products.Count });
+        }
+
+        // DTOs para payload do layout
+        public class StorefrontLayoutPayload
+        {
+            public Dictionary<int, StorefrontLayoutItem> Items { get; set; } = new();
+        }
+
+        public class StorefrontLayoutItem
+        {
+            public int? SortRank { get; set; }
+            public bool? PinnedTop { get; set; }
+        }
+    }
+}
+
+```
+
+Controllers/StockController.cs:
+```cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+
+namespace CSharpAssistant.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class StockController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public StockController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // 🔎 GET: /api/stock
+        [HttpGet]
+        public async Task<IActionResult> GetAllStocks()
+        {
+            var products = await _context.Products.ToListAsync();
+            var stocks = await _context.StoreStocks.ToListAsync();
+
+            var result = products.Select(p => new
+            {
+                ProductId = p.Id,
+                ProductName = p.Name,
+                ImageUrl = p.ImageUrl,
+                Efapi = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "efapi")?.Quantity ?? 0,
+                Palmital = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "palmital")?.Quantity ?? 0,
+                Passo = stocks.FirstOrDefault(s => s.ProductId == p.Id && s.Store.ToLower() == "passo")?.Quantity ?? 0
+            });
+
+            return Ok(result);
+        }
+
+        // 💾 POST: /api/stock/{productId}
+        [HttpPost("{productId}")]
+        public async Task<IActionResult> UpdateStock(int productId, [FromBody] Dictionary<string, int> stocks)
+        {
+            foreach (var store in new[] { "efapi", "palmital", "passo" })
+            {
+                var quantity = stocks.ContainsKey(store) ? stocks[store] : 0;
+
+                var existingStock = await _context.StoreStocks
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.Store.ToLower() == store.ToLower());
+
+                if (existingStock != null)
+                {
+                    existingStock.Quantity = quantity;
+                }
+                else
+                {
+                    _context.StoreStocks.Add(new StoreStock
+                    {
+                        ProductId = productId,
+                        Store = store.ToLower(),
+                        Quantity = quantity
+                    });
+                }
+
+                var visibility = await _context.StoreProductVisibilities
+                    .FirstOrDefaultAsync(v => v.ProductId == productId && v.Store.ToLower() == store.ToLower());
+
+                if (quantity > 0)
+                {
+                    if (visibility == null)
+                    {
+                        _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                        {
+                            ProductId = productId,
+                            Store = store.ToLower()
+                        });
+                    }
+                }
+                else
+                {
+                    if (visibility != null)
+                    {
+                        _context.StoreProductVisibilities.Remove(visibility);
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Estoque e visibilidade atualizados com sucesso!" });
+        }
+    }
+}
+
+```
+
+Controllers/CategoriesController.cs:
+```cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+
+
+
+
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+using CSharpAssistant.API.Models;
+
+namespace CSharpAssistant.API.Models
+
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CategoriesController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public CategoriesController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        // [Authorize]
+        public async Task<IActionResult> GetAll()
+        {
+            var categories = await _context.Categories.ToListAsync();
+            return Ok(categories);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Create(Category category)
+        {
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetAll), new { id = category.Id }, category);
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, Category updated)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound();
+
+            category.Name = updated.Name;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound();
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+    }
+}
+
+```
+
+Controllers/SubcategoriesController.cs:
+```cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Models;
+using CSharpAssistant.API.Data;
+
+namespace CSharpAssistant.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SubcategoriesController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public SubcategoriesController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetAll()
+        {
+            var subcategories = await _context.Subcategories.ToListAsync();
+            return Ok(subcategories);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Create([FromBody] Subcategory subcategory)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _context.Subcategories.Add(subcategory);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetAll), new { id = subcategory.Id }, subcategory);
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromBody] Subcategory updated)
+        {
+            var subcategory = await _context.Subcategories.FindAsync(id);
+            if (subcategory == null)
+                return NotFound();
+
+            subcategory.Name = updated.Name;
+            subcategory.CategoryId = updated.CategoryId;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var subcategory = await _context.Subcategories.FindAsync(id);
+            if (subcategory == null)
+                return NotFound();
+
+            _context.Subcategories.Remove(subcategory);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+    }
+}
+
+```
+
+Controllers/SettingsController.cs:
+```cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+using System;
+using System.Threading.Tasks;
+
+namespace CSharpAssistant.API.Models
+
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SettingsController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public SettingsController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: api/settings
+        [HttpGet]
+        public async Task<IActionResult> GetSetting()
+        {
+            var setting = await _context.Settings.FirstOrDefaultAsync();
+            if (setting == null)
+                return NotFound(new { message = "Nenhuma configuração encontrada." });
+
+            return Ok(setting);
+        }
+
+       // PUT: api/settings
+[HttpPut]
+public async Task<IActionResult> UpdateSetting([FromBody] Setting updated)
+{
+    // Normaliza entradas
+    var safeRate = Math.Max(0m, updated.DeliveryRate);
+    var safeMin  = Math.Max(0m, updated.MinDelivery);
+
+    var setting = await _context.Settings.FirstOrDefaultAsync();
+    if (setting == null)
+    {
+        setting = new Setting
+        {
+            DeliveryRate = safeRate,
+            MinDelivery  = safeMin,
+            CreatedAt    = DateTime.UtcNow,
+            UpdatedAt    = DateTime.UtcNow
+        };
+        _context.Settings.Add(setting);
+    }
+    else
+    {
+        setting.DeliveryRate = safeRate;
+        setting.MinDelivery  = safeMin;
+        setting.UpdatedAt    = DateTime.UtcNow;
+        _context.Settings.Update(setting);
+    }
+
+    await _context.SaveChangesAsync();
+    return Ok(new { message = "Configuração atualizada com sucesso." });
+}
+
+
+        // DELETE: api/settings
+        [HttpDelete]
+        public async Task<IActionResult> DeleteSetting()
+        {
+            var setting = await _context.Settings.FirstOrDefaultAsync();
+            if (setting == null)
+                return NotFound(new { message = "Nenhuma configuração para excluir." });
+
+            _context.Settings.Remove(setting);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Configuração removida com sucesso." });
+        }
+    }
+}
+
+```
+
+Controllers/AuthController.cs:
+```cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.Models;
+using CSharpAssistant.API.Helpers;
+using CSharpAssistant.API.Services;
+using CSharpAssistant.API.DTOs;
+
+namespace CSharpAssistant.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+        private readonly TokenService _tokenService;
+
+        public AuthController(AppDbContext context, TokenService tokenService)
+        {
+            _context = context;
+            _tokenService = tokenService;
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register()
+        {
+            try
+            {
+                var email = "admin@eskimo.com";
+                var senha = "admin123";
+                var username = "admin";
+
+                if (await _context.Users.AnyAsync(u => u.Email == email))
+                    return BadRequest("Admin já foi criado.");
+
+                var user = new User
+                {
+                    Username = username,
+                    Email = email,
+                    Role = "admin",
+                    PasswordHash = PasswordHasher.Hash(senha)
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Admin criado com sucesso" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+
+       [HttpPost("login")]
+public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
+{
+    Console.WriteLine("🔐 Tentativa de login com:");
+    Console.WriteLine($"Email: {loginDto.Email}");
+    Console.WriteLine($"Password: {loginDto.Password}");
+
+    Console.WriteLine("🔎 Consultando usuário no banco...");
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+
+    if (user == null)
+    {
+        Console.WriteLine("❌ Usuário não encontrado no banco.");
+        return Unauthorized("Credenciais inválidas.");
+    }
+    else
+    {
+        Console.WriteLine("✅ Usuário encontrado: " + user.Email);
+    }
+
+    if (!PasswordHasher.Verify(loginDto.Password, user.PasswordHash))
+    {
+        Console.WriteLine("❌ Senha incorreta.");
+        return Unauthorized("Credenciais inválidas.");
+    }
+
+    var token = _tokenService.GenerateToken(user);
+    Console.WriteLine("✅ Token gerado com sucesso.");
+
+    return Ok(new { token });
+}
+
+    }
+}
+
+```
+
+Services/ProductService.cs:
+```cs
+using CSharpAssistant.API.Data;
+using CSharpAssistant.API.DTOs;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+
+namespace CSharpAssistant.API.Services
+{
+    public class ProductService
+    {
+        private readonly AppDbContext _context;
+        public ProductService(AppDbContext context) => _context = context;
+
+        public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10, string? store = null)
+        {
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Subcategory)
+                .Include(p => p.StoreStocks)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(store))
+            {
+                query = query.Where(p => p.StoreStocks.Any(s => s.Store == store && s.Quantity > 0));
+            }
+
+            if (!string.IsNullOrEmpty(nameFilter))
+            {
+                var nf = nameFilter.ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(nf));
+            }
+
+            return query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new ProductDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    ImageUrl = p.ImageUrl,
+                    Stock = store != null
+                        ? p.StoreStocks.Where(s => s.Store == store).Select(s => s.Quantity).FirstOrDefault()
+                        : 0,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : null,
+                    SubcategoryId = p.SubcategoryId,
+                    SubcategoryName = p.Subcategory != null ? p.Subcategory.Name : null,
+
+                    // 👇 necessários para a ordenação na controller
+                    SortRank = p.SortRank,
+                    PinnedTop = p.PinnedTop
+                })
+                .ToList();
+        }
+    }
+}
+
+```
+
+Program.cs:
+```cs
+using Microsoft.AspNetCore.Authentication.JwtBearer; using System.Text;
+ using Microsoft.AspNetCore.Builder;
+ using Microsoft.EntityFrameworkCore;
+ using Microsoft.Extensions.DependencyInjection;
+ using Microsoft.Extensions.Hosting;
+ using QuestPDF.Infrastructure;
+ using Microsoft.IdentityModel.Tokens;
+ using Microsoft.OpenApi.Models;
+ using System.IO;
+ using Microsoft.AspNetCore.HttpOverrides;
+ 
+ using CSharpAssistant.API.Scripts;
+ using CSharpAssistant.API.Data;
+ using CSharpAssistant.API.Services;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+ // 🔧 Configurações Npgsql para PostgreSQL 14+
+ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+ AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+ 
+ // 🔐 JWT
+ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+ .AddJwtBearer(options =>
+ {
+ var key = builder.Configuration["Jwt:Key"];
+ options.TokenValidationParameters = new TokenValidationParameters
+ {
+ ValidateIssuer = true,
+ ValidateAudience = true,
+ ValidateLifetime = true,
+ ValidateIssuerSigningKey = true,
+ ValidIssuer = builder.Configuration["Jwt:Issuer"],
+ ValidAudience = builder.Configuration["Jwt:Audience"],
+ IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
+ };
+ });
+ 
+ builder.Services.AddAuthorization();
+ builder.Services.AddScoped<TokenService>();
+ 
+ // 📦 Controllers + JSON
+ builder.Services.AddControllers()
+ .AddJsonOptions(x =>
+ x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+ 
+ // 🗄️ Banco de dados PostgreSQL
+ builder.Services.AddDbContext<AppDbContext>(options =>
+ {
+ options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+ options.EnableSensitiveDataLogging();
+ });
+ 
+ // 🧩 Serviços (DI)
+ builder.Services.AddScoped<ProductService>();
+ builder.Services.AddScoped<MercadoPagoService>(); // 💳 Mercado Pago
+ builder.Services.AddHttpClient();
+ builder.Services.AddHttpContextAccessor();
+ 
+ // 🌐 CORS
+ builder.Services.AddCors(options =>
+ {
+ options.AddPolicy("AllowFrontend", policy =>
+ {
+ policy.WithOrigins(
+ "http://localhost:5173",
+ "http://127.0.0.1:5173",
+ "https://localhost:5173",
+ "https://127.0.0.1:5173",
+ 
+ // Admin / Site públicos
+ "https://www.admin.eskimochapeco.com.br",
+ "https://admin.eskimochapeco.com.br",
+ "https://eskimochapeco.com.br",
+ "https://www.eskimochapeco.com.br",
+ 
+ // Vercel antigos/atuais
+ "https://eskimosites.vercel.app",
+ "https://admin-panel-eskimo.vercel.app",
+ "https://site-eskimo.vercel.app"
+ )
+ .AllowAnyHeader()
+ .AllowAnyMethod()
+ .AllowCredentials(); // habilite se precisar enviar cookies/autenticação cross-site
+ });
+ });
+ 
+ // 📚 Swagger
+ builder.Services.AddEndpointsApiExplorer();
+ builder.Services.AddSwaggerGen(c =>
+ {
+ c.SwaggerDoc("v1", new OpenApiInfo
+ {
+ Title = "e-Commerce API",
+ Version = "v1",
+ Description = "API modular para sistema de e-commerce"
+ });
+ 
+ c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+ {
+ In = ParameterLocation.Header,
+ Description = "Insira o token JWT no formato: Bearer {seu token}",
+ Name = "Authorization",
+ Type = SecuritySchemeType.ApiKey,
+ Scheme = "Bearer"
+ });
+ 
+ c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+ {
+ new OpenApiSecurityScheme {
+ Reference = new OpenApiReference {
+ Type = ReferenceType.SecurityScheme,
+ Id = "Bearer"
+ }
+ },
+ Array.Empty<string>()
+ }
+ });
+ });
+ 
+ // 🔎 Log ConnectionString (debug)
+ Console.WriteLine("🔑 ConnectionString atual:");
+ Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
+ 
+ var app = builder.Build();
+ 
+ // 📄 Licença QuestPDF
+ QuestPDF.Settings.License = LicenseType.Community;
+ 
+ // 🗃️ Migrar DB
+ using (var scope = app.Services.CreateScope())
+ {
+ var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+ try
+ {
+ db.Database.Migrate();
+ }
+ catch (Exception ex)
+ {
+ app.Logger.LogError(ex, "EF migrate failed (provável PendingModelChangesWarning). Verifique migrations pendentes.");
+ }
+ 
+ }
+ 
+ // ⚙️ Proxy/Headers da Render (garante Scheme/Host corretos p/ back_urls/webhook)
+ app.UseForwardedHeaders(new ForwardedHeadersOptions
+ {
+ ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+ });
+ 
+ // 🔍 Swagger
+ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+ {
+ app.UseSwagger();
+ app.UseSwaggerUI(c =>
+ {
+ c.SwaggerEndpoint("/swagger/v1/swagger.json", "e-Commerce API v1");
+ c.RoutePrefix = "swagger";
+ });
+ }
+ 
+ app.UseRouting();
+ app.UseCors("AllowFrontend");
+ app.UseAuthentication();
+ app.UseAuthorization();
+ 
+ app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
+ 
+ // 🧪 Rotas teste
+ app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
+ app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
+ 
+ // 🛠️ Endpoint para rodar importador manualmente
+ app.MapPost("/run-importer", async (AppDbContext db) =>
+ {
+ try
+ {
+ Console.WriteLine("📥 Executando importação manual via /run-importer");
+ await Task.Run(() => ImportProductsFromJson.Run(app));
+ return Results.Ok("✅ Importação realizada com sucesso.");
+ }
+ catch (Exception ex)
+ {
+ Console.WriteLine("❌ Erro completo:");
+ Console.WriteLine(ex.ToString());
+ return Results.Problem("Erro ao importar produtos: " + ex.Message);
+ }
+ });
+ 
+ // ✅ Log final
+ Console.WriteLine("✅ API iniciada e pronta para receber requisições.");
+ 
+ app.Run();
+
+```
+
+appsettings.json:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=dpg-d2524ovdiees739r0mn0-a.oregon-postgres.render.com;Port=5432;Database=eskimo_db_oobc_7nxm;Username=eskimo_user;Password=3pZjAaQgw1za3eBZpM2OiOMtePUOGNGd;SSL Mode=Require;Trust Server Certificate=true"
+  },
+
+  "PublicBaseUrl": "https://backend-eskimo.onrender.com",
+  "FrontBaseUrl": "https://eskimochapeco.com.br",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "AllowedHosts": "*",
+
+  "Jwt": {
+    "Key": "minhaChaveUltraSecreta1234567890!!!",
+    "Issuer": "ecommerce-api",
+    "Audience": "ecommerce-client"
+  }
+}
+
+```
+
+appsettings.Development.json:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=dpg-d2524ovdiees739r0mn0-a.oregon-postgres.render.com;Port=5432;Database=eskimo_db_oobc_7nxm;Username=eskimo_user;Password=3pZjAaQgw1za3eBZpM2OiOMtePUOGNGd;SSL Mode=Require;Trust Server Certificate=true"
+  },
+
+  "PublicBaseUrl": "http://localhost:8080",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+
+```
+
+render.yaml:
+```yaml
+services:
+  - type: web
+    name: backend-eskimo
+    env: dotnet
+    plan: free
+    branch: main
+    rootDir: .
+    buildCommand: dotnet restore
+    startCommand: dotnet run --project e-commerce.csproj
+
+```
+
