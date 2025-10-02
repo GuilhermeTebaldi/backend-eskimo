@@ -1,15 +1,16 @@
-// CSharpAssistant.API/Controllers/ProductsController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Services;
+using CSharpAssistant.API.Models;
 
-namespace CSharpAssistant.API.Controllers
+
+using System.Linq;
+namespace CSharpAssistant.API.Models
+
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -24,7 +25,7 @@ namespace CSharpAssistant.API.Controllers
             _productService = productService;
         }
 
-        // GET: api/products/list?store=efapi
+        // 📦 GET: api/products/list?store=efapi
         [HttpGet("list")]
         public IActionResult GetFiltered(
             [FromQuery] string? name,
@@ -32,19 +33,16 @@ namespace CSharpAssistant.API.Controllers
             [FromQuery] int pageSize = 100,
             [FromQuery] string? store = null)
         {
-            var result = _productService.GetAllProducts(name, page, pageSize, store)
-                .OrderByDescending(p => p.PinnedTop ?? false)
-                .ThenBy(p => p.SortRank ?? int.MaxValue)
-                .ThenBy(p => p.Name);
-
+            var result = _productService.GetAllProducts(name, page, pageSize, store);
             return Ok(result);
         }
 
-        // POST: api/products
+        // 📦 POST: api/products
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Product product)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var entity = new Product
             {
@@ -59,21 +57,29 @@ namespace CSharpAssistant.API.Controllers
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
 
+            // Criar estoques iguais para cada loja com valor default (ex: 0)
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
-                _context.StoreStocks.Add(new StoreStock { ProductId = entity.Id, Store = store, Quantity = 0 });
+                _context.StoreStocks.Add(new StoreStock
+                {
+                    ProductId = entity.Id,
+                    Store = store,
+                    Quantity = 0
+                });
             }
+
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
         }
 
-        // PUT: api/products/5
+        // 🛠 PUT: api/products/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Product updated)
         {
             var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+            if (product == null)
+                return NotFound();
 
             product.Name = updated.Name;
             product.Description = updated.Description;
@@ -86,30 +92,30 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
-        // DELETE: api/products/5
+        // 🗑 DELETE: api/products/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+            if (product == null)
+                return NotFound();
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             return NoContent();
         }
 
-        // GET: api/products/5
+        // 📦 GET: api/products/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             var product = await _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
-                .Include(p => p.StoreStocks)
-                .Include(p => p.Visibilities)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (product == null) return NotFound();
+            if (product == null)
+                return NotFound();
 
             var dto = new ProductDTO
             {
@@ -118,26 +124,17 @@ namespace CSharpAssistant.API.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = 0,
+                Stock = 0, // Valor fixo ou ignorado
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
-                SubcategoryName = product.Subcategory?.Name,
-                SortRank = product.SortRank,
-                PinnedTop = product.PinnedTop,
-                StoreStocks = product.StoreStocks?
-                    .GroupBy(s => s.Store)
-                    .ToDictionary(g => g.Key, g => g.Select(x => x.Quantity).FirstOrDefault()),
-                Visibilities = product.Visibilities != null && product.Visibilities.Any()
-                    ? product.Visibilities.GroupBy(v => v.Store)
-                        .ToDictionary(g => g.Key, g => g.Select(x => x.IsVisible).FirstOrDefault())
-                    : null
+                SubcategoryName = product.Subcategory?.Name
             };
 
             return Ok(dto);
         }
 
-        // GET: api/products/5/visibility
+        // 👁️‍🗨️ GET: api/products/5/visibility
         [HttpGet("{id}/visibility")]
         public async Task<IActionResult> GetVisibility(int id)
         {
@@ -149,61 +146,30 @@ namespace CSharpAssistant.API.Controllers
             return Ok(stores);
         }
 
-        // POST: api/products/5/visibility
-       // CSharpAssistant.API/Controllers/ProductsController.cs (trecho)
-[HttpPost("{id}/visibility")]
-public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
-{
-    var product = await _context.Products
-        .Include(p => p.Visibilities)
-        .FirstOrDefaultAsync(p => p.Id == id);
-    if (product == null) return NotFound();
-
-    if (product.Visibilities != null && product.Visibilities.Any())
-        _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
-
-    foreach (var store in stores.Distinct())
-    {
-        _context.StoreProductVisibilities.Add(new StoreProductVisibility
+        // ✅ POST: api/products/5/visibility
+        [HttpPost("{id}/visibility")]
+        public async Task<IActionResult> SetVisibility(int id, [FromBody] List<string> stores)
         {
-            ProductId = id,
-            Store = store,
-            IsVisible = true
-        });
-    }
+            var product = await _context.Products
+                .Include(p => p.Visibilities)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-    await _context.SaveChangesAsync();
-    return Ok();
-}
+            if (product == null)
+                return NotFound();
 
-        // PUT: /api/storefront/layout
-        [HttpPut("~/api/storefront/layout")]
-        public async Task<IActionResult> UpdateStorefrontLayout([FromBody] StorefrontLayoutPayload payload)
-        {
-            if (payload?.Items == null || payload.Items.Count == 0) return BadRequest("Payload vazio.");
+            _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
 
-            var ids = payload.Items.Keys.ToList();
-            var products = await _context.Products.Where(p => ids.Contains(p.Id)).ToListAsync();
-
-            foreach (var p in products)
+            foreach (var store in stores)
             {
-                if (!payload.Items.TryGetValue(p.Id, out var it)) continue;
-                if (it.SortRank.HasValue) p.SortRank = it.SortRank;
-                if (it.PinnedTop.HasValue) p.PinnedTop = it.PinnedTop;
+                _context.StoreProductVisibilities.Add(new StoreProductVisibility
+                {
+                    ProductId = id,
+                    Store = store
+                });
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { updated = products.Count });
-        }
-
-        public class StorefrontLayoutPayload
-        {
-            public Dictionary<int, StorefrontLayoutItem> Items { get; set; } = new();
-        }
-        public class StorefrontLayoutItem
-        {
-            public int? SortRank { get; set; }
-            public bool? PinnedTop { get; set; }
+            return Ok();
         }
     }
 }
