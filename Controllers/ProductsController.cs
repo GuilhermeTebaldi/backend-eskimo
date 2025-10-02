@@ -1,3 +1,4 @@
+// CSharpAssistant.API/Controllers/ProductsController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
@@ -114,6 +115,8 @@ namespace CSharpAssistant.API.Controllers
             var product = await _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Subcategory)
+                .Include(p => p.StoreStocks)
+                .Include(p => p.Visibilities)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)
@@ -126,11 +129,20 @@ namespace CSharpAssistant.API.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
-                Stock = 0,
+                Stock = 0, // compat: preenchido via /list quando store é informado
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category?.Name,
                 SubcategoryId = product.SubcategoryId,
-                SubcategoryName = product.Subcategory?.Name
+                SubcategoryName = product.Subcategory?.Name,
+                SortRank = product.SortRank,
+                PinnedTop = product.PinnedTop,
+                StoreStocks = product.StoreStocks?
+                    .GroupBy(s => s.Store)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.Quantity).FirstOrDefault()),
+                Visibilities = product.Visibilities != null && product.Visibilities.Any()
+                    ? product.Visibilities.GroupBy(v => v.Store)
+                        .ToDictionary(g => g.Key, g => g.Select(x => x.IsVisible).FirstOrDefault())
+                    : null
             };
 
             return Ok(dto);
@@ -159,14 +171,16 @@ namespace CSharpAssistant.API.Controllers
             if (product == null)
                 return NotFound();
 
-            _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
+            if (product.Visibilities != null && product.Visibilities.Any())
+                _context.StoreProductVisibilities.RemoveRange(product.Visibilities);
 
-            foreach (var store in stores)
+            foreach (var store in stores.Distinct())
             {
                 _context.StoreProductVisibilities.Add(new StoreProductVisibility
                 {
                     ProductId = id,
-                    Store = store
+                    Store = store,
+                    IsVisible = true
                 });
             }
 
