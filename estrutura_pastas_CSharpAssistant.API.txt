@@ -81,6 +81,7 @@
 │           │   ├── Lato-Thin.ttf
 │           │   ├── Lato-ThinItalic.ttf
 │           │   └── OFL.txt
+│           ├── layout.json
 │           ├── Microsoft.AspNetCore.Authentication.JwtBearer.dll
 │           ├── Microsoft.Bcl.AsyncInterfaces.dll
 │           ├── Microsoft.Build.Locator.dll
@@ -252,6 +253,9 @@
 │   ├── StorefrontController.cs
 │   ├── SubcategoriesController.cs
 │   └── SubcategoriesController.cs.save
+├── CSharpAssistant.API
+│   └── obj
+│       └── CSharpAssistant.API.csproj.EntityFrameworkCore.targets
 ├── CSharpAssistant.API.http
 ├── CSharpAssistant.API.sln
 ├── Data
@@ -264,14 +268,14 @@
 │   ├── OrderItemDTO.cs
 │   ├── ProductDTO.cs
 │   └── RegisterDTO.cs
-├── dump_projeto_backend.txt
-├── dump_projeto.txt
 ├── e-commerce.csproj
 ├── ecommerce
+├── estrutura_pastas_CSharpAssistant.API.txt
 ├── estrutura_pastas.txt
 ├── fake.pem
 ├── Helpers
 │   └── PasswordHasher.cs
+├── layout.json
 ├── Migrations
 │   ├── 20250730144303_InitFinal.cs
 │   ├── 20250730144303_InitFinal.Designer.cs
@@ -289,6 +293,8 @@
 │   ├── 20251002162639_AddProductSortAndPin.Designer.cs
 │   ├── 20251002164749_AddLayoutColumns.cs
 │   ├── 20251002164749_AddLayoutColumns.Designer.cs
+│   ├── 20251011121832_AddVisibilityLayoutColumns.cs
+│   ├── 20251011121832_AddVisibilityLayoutColumns.Designer.cs
 │   └── AppDbContextModelSnapshot.cs
 ├── Models
 │   ├── Category.cs
@@ -369,6 +375,7 @@
 │   ├── Swashbuckle.AspNetCore.SwaggerUI.dll
 │   └── web.config
 ├── Program.cs
+├── PRONT_ESKIMO.md
 ├── Properties
 │   └── launchSettings.json
 ├── README_banco.MD
@@ -382,4 +389,4 @@
     ├── ProductService.cs
     └── TokenService.cs
 
-59 directories, 324 files
+61 directories, 329 files

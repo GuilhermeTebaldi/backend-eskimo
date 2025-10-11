@@ -162,7 +162,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer; using System.Text;
  app.UseRouting();
  app.UseCors("AllowFrontend");
  app.UseAuthentication();
- app.UseAuthorization();
+ app.UseAuthorization(); 
  
  app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
  
