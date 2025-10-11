@@ -25,17 +25,18 @@ namespace CSharpAssistant.API.Controllers
             _productService = productService;
         }
 
-        // 📦 GET: /api/products/list?store=efapi
         [HttpGet("list")]
-        public IActionResult GetFiltered(
-            [FromQuery] string? name,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 100,
-            [FromQuery] string? store = null)
-        {
-            var result = _productService.GetAllProducts(name, page, pageSize, store);
-            return Ok(result);
-        }
+public IActionResult GetFiltered(
+    [FromQuery] string? name,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 100,
+    [FromQuery] string? store = null,
+    [FromQuery] bool includeArchived = false)
+{
+    var result = _productService.GetAllProducts(name, page, pageSize, store, includeArchived);
+    return Ok(result);
+}
+
 
         // 📦 POST: /api/products
         [HttpPost]
@@ -171,6 +172,22 @@ namespace CSharpAssistant.API.Controllers
             return Ok();
         }
 
-       
+       // 🗄 Arquivar / Recolocar produto
+[HttpPatch("{id}/archive")]
+public async Task<IActionResult> Archive(int id, [FromBody] ArchiveRequest body)
+{
+    var product = await _context.Products.FindAsync(id);
+    if (product == null) return NotFound();
+
+    product.IsArchived = body.IsArchived;
+    await _context.SaveChangesAsync();
+    return NoContent();
+}
+
+public class ArchiveRequest
+{
+    public bool IsArchived { get; set; }
+}
+
     }
 }

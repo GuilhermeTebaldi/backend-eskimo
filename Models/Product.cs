@@ -35,5 +35,8 @@ namespace CSharpAssistant.API.Models
         public ICollection<StoreStock>? StoreStocks { get; set; }
 
         public ICollection<StoreProductVisibility>? Visibilities { get; set; }
+
+        // Arquivamento lógico
+        public bool IsArchived { get; set; } = false;
     }
 }

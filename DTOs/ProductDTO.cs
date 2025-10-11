@@ -29,5 +29,7 @@ namespace CSharpAssistant.API.DTOs
          // Novo: campos de layout de vitrine (nível de produto)
         public int? SortRank { get; set; }
         public bool? PinnedTop { get; set; }
+        public bool IsArchived { get; set; }
+
     }
 }

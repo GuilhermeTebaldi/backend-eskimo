@@ -17,7 +17,8 @@ namespace CSharpAssistant.API.Services
         }
 
         // Sem store => lista todos. Com store => só com estoque > 0 nessa loja.
-        public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10, string? store = null)
+       public IEnumerable<ProductDTO> GetAllProducts(string? nameFilter = null, int page = 1, int pageSize = 10, string? store = null, bool includeArchived = false)
+
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
@@ -28,6 +29,11 @@ namespace CSharpAssistant.API.Services
                 .Include(p => p.Subcategory)
                 .Include(p => p.StoreStocks)
                 .AsQueryable();
+                if (!includeArchived)
+{
+    query = query.Where(p => !p.IsArchived);
+}
+
 
             if (!string.IsNullOrEmpty(store))
             {
@@ -69,7 +75,10 @@ namespace CSharpAssistant.API.Services
                     SubcategoryId = p.SubcategoryId,
                     SubcategoryName = p.Subcategory != null ? p.Subcategory.Name : null,
                     SortRank = p.SortRank,
-                    PinnedTop = p.PinnedTop
+                    PinnedTop = p.PinnedTop,
+                    IsArchived = p.IsArchived,
+
+
                 })
                 .ToList();
         }
