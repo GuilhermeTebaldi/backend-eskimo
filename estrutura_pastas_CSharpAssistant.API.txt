@@ -249,6 +249,7 @@
 │   ├── SettingsController.cs
 │   ├── StatusController.cs
 │   ├── StockController.cs
+│   ├── StorefrontController.cs
 │   ├── SubcategoriesController.cs
 │   └── SubcategoriesController.cs.save
 ├── CSharpAssistant.API.http
@@ -264,12 +265,9 @@
 │   ├── ProductDTO.cs
 │   └── RegisterDTO.cs
 ├── dump_projeto_backend.txt
+├── dump_projeto.txt
 ├── e-commerce.csproj
 ├── ecommerce
-│   └── Migrations
-│       ├── 20251002154447_AddProductLayout.cs
-│       └── 20251002154447_AddProductLayout.Designer.cs
-├── estrutura_pastas_CSharpAssistanti.API.txt
 ├── estrutura_pastas.txt
 ├── fake.pem
 ├── Helpers
@@ -285,6 +283,12 @@
 │   ├── 20250917180311_AddWhatsappNotifiedAt_AndWhatsFields.Designer.cs
 │   ├── 20250929120000_AddMinDeliveryToSettings.cs
 │   ├── 20250929183211_AddMinDeliveryToSettings.Designer.cs
+│   ├── 20251002154447_AddProductLayout.cs
+│   ├── 20251002154447_AddProductLayout.Designer.cs
+│   ├── 20251002162639_AddProductSortAndPin.cs
+│   ├── 20251002162639_AddProductSortAndPin.Designer.cs
+│   ├── 20251002164749_AddLayoutColumns.cs
+│   ├── 20251002164749_AddLayoutColumns.Designer.cs
 │   └── AppDbContextModelSnapshot.cs
 ├── Models
 │   ├── Category.cs
@@ -378,4 +382,4 @@
     ├── ProductService.cs
     └── TokenService.cs
 
-60 directories, 319 files
+59 directories, 324 files

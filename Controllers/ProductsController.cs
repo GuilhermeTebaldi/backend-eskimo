@@ -171,36 +171,6 @@ namespace CSharpAssistant.API.Controllers
             return Ok();
         }
 
-        // 💾 PUT: /api/storefront/layout  — salva { items: { "123": { sortRank, pinnedTop }, ... } }
-        [HttpPut("~/api/storefront/layout")]
-        public async Task<IActionResult> UpdateStorefrontLayout([FromBody] StorefrontLayoutPayload payload)
-        {
-            if (payload?.Items == null || payload.Items.Count == 0)
-                return BadRequest("Payload vazio.");
-
-            var ids = payload.Items.Keys.ToList();
-            var products = await _context.Products.Where(p => ids.Contains(p.Id)).ToListAsync();
-
-            foreach (var p in products)
-            {
-                if (!payload.Items.TryGetValue(p.Id, out var it)) continue;
-                if (it.SortRank.HasValue) p.SortRank = it.SortRank;
-                if (it.PinnedTop.HasValue) p.PinnedTop = it.PinnedTop;
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok(new { updated = products.Count });
-        }
-
-        public class StorefrontLayoutPayload
-        {
-            public Dictionary<int, StorefrontLayoutItem> Items { get; set; } = new();
-        }
-
-        public class StorefrontLayoutItem
-        {
-            public int? SortRank { get; set; }
-            public bool? PinnedTop { get; set; }
-        }
+       
     }
 }

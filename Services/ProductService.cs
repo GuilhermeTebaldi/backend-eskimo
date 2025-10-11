@@ -67,7 +67,9 @@ namespace CSharpAssistant.API.Services
                     CategoryId = p.CategoryId,
                     CategoryName = p.Category != null ? p.Category.Name : null,
                     SubcategoryId = p.SubcategoryId,
-                    SubcategoryName = p.Subcategory != null ? p.Subcategory.Name : null
+                    SubcategoryName = p.Subcategory != null ? p.Subcategory.Name : null,
+                    SortRank = p.SortRank,
+                    PinnedTop = p.PinnedTop
                 })
                 .ToList();
         }

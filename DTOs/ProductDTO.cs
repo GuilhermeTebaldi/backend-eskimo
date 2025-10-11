@@ -25,5 +25,9 @@ namespace CSharpAssistant.API.DTOs
         public Dictionary<string, int>? StoreStocks { get; set; }
 
         public Dictionary<string, bool>? Visibilities { get; set; }
+
+         // Novo: campos de layout de vitrine (nível de produto)
+        public int? SortRank { get; set; }
+        public bool? PinnedTop { get; set; }
     }
 }
