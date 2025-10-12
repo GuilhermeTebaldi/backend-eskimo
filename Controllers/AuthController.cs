@@ -86,7 +86,14 @@ if (!user.IsEnabled)
     var token = _tokenService.GenerateToken(user);
     Console.WriteLine("✅ Token gerado com sucesso.");
 
-    return Ok(new { token });
+    return Ok(new
+{
+    token,
+    role = user.Role?.ToLowerInvariant() ?? "operator",
+    permissions = user.Permissions ?? "{}",
+    isEnabled = user.IsEnabled
+});
+
 }
 
     }

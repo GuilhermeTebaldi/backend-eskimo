@@ -21,11 +21,15 @@ namespace CSharpAssistant.API.Services
 
         public string GenerateToken(User user)
         {
+            var normalizedRole = string.IsNullOrWhiteSpace(user.Role) ? "operator" : user.Role.ToLowerInvariant();
+
             var claims = new List<Claim>
 {
     new Claim(ClaimTypes.Name, user.Username),
     new Claim(ClaimTypes.Email, user.Email),
-    new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? "operator" : user.Role),
+    new Claim(ClaimTypes.Role, normalizedRole),
+    new Claim("role", normalizedRole),
+
     // payload com permissões cruas (JSON). O frontend decodifica e usa.
     new Claim("permissions", string.IsNullOrWhiteSpace(user.Permissions) ? "{}" : user.Permissions),
     new Claim("isEnabled", user.IsEnabled ? "true" : "false")
