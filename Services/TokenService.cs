@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using CSharpAssistant.API.Models;
 
+using System.Collections.Generic;
+
 
 namespace CSharpAssistant.API.Services
 {
@@ -19,12 +21,16 @@ namespace CSharpAssistant.API.Services
 
         public string GenerateToken(User user)
         {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
-            };
+            var claims = new List<Claim>
+{
+    new Claim(ClaimTypes.Name, user.Username),
+    new Claim(ClaimTypes.Email, user.Email),
+    new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? "operator" : user.Role),
+    // payload com permissões cruas (JSON). O frontend decodifica e usa.
+    new Claim("permissions", string.IsNullOrWhiteSpace(user.Permissions) ? "{}" : user.Permissions),
+    new Claim("isEnabled", user.IsEnabled ? "true" : "false")
+};
+
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -71,6 +71,11 @@ public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
     {
         Console.WriteLine("✅ Usuário encontrado: " + user.Email);
     }
+if (!user.IsEnabled)
+{
+    Console.WriteLine("❌ Usuário desabilitado.");
+    return Unauthorized("Usuário desabilitado pelo administrador.");
+}
 
     if (!PasswordHasher.Verify(loginDto.Password, user.PasswordHash))
     {

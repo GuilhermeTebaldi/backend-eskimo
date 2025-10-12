@@ -3,13 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Models;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Route("[controller]")] // compat opcional
-    public class StockController : ControllerBase
+    [Authorize(Policy = "RequireOperatorOrAdmin")]
+public class StockController : ControllerBase
+
     {
         private readonly AppDbContext _context;
         public StockController(AppDbContext context) { _context = context; }

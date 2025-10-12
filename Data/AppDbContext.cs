@@ -22,6 +22,20 @@ namespace CSharpAssistant.API.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            // 👤 Users
+modelBuilder.Entity<User>()
+    .HasIndex(u => u.Email)
+    .IsUnique();
+
+modelBuilder.Entity<User>()
+    .Property(u => u.Permissions)
+    .HasColumnType("jsonb")
+    .HasDefaultValueSql("'{}'::jsonb");
+
+modelBuilder.Entity<User>()
+    .Property(u => u.IsEnabled)
+    .HasDefaultValue(true);
+
 
             // 🔒 Garantir único ProductId+Store em estoques
             modelBuilder.Entity<StoreStock>()
