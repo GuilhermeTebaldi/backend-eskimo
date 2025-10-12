@@ -22,6 +22,7 @@ namespace CSharpAssistant.API.Services
         public string GenerateToken(User user)
         {
             var normalizedRole = string.IsNullOrWhiteSpace(user.Role) ? "operator" : user.Role.ToLowerInvariant();
+           
 
             var claims = new List<Claim>
 {

@@ -95,6 +95,35 @@ if (!user.IsEnabled)
 });
 
 }
+[HttpGet("me")]
+public async Task<IActionResult> Me()
+{
+    try
+    {
+        var emailClaim = User?.Claims?.FirstOrDefault(c =>
+            c.Type == System.Security.Claims.ClaimTypes.Email || c.Type == "email")?.Value;
+
+        if (string.IsNullOrWhiteSpace(emailClaim))
+            return Unauthorized(new { error = "Token inválido ou sem e-mail." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == emailClaim);
+        if (user == null)
+            return Unauthorized(new { error = "Usuário não encontrado." });
+
+        return Ok(new
+        {
+            email = user.Email,
+            username = user.Username,
+            role = (user.Role ?? "operator").ToLowerInvariant(),
+            permissions = user.Permissions ?? "{}",
+            isEnabled = user.IsEnabled
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+    }
+}
 
     }
 }
