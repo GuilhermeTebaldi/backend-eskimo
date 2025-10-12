@@ -36,7 +36,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer; using System.Text;
  };
  });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", p => p.RequireRole("admin"));
+    options.AddPolicy("RequireOperatorOrAdmin", p => p.RequireRole("admin", "operator"));
+});
+
 
 
  builder.Services.AddScoped<TokenService>();
