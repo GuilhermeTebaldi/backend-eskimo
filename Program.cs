@@ -42,10 +42,15 @@ builder.Services.AddAuthorization();
  builder.Services.AddScoped<TokenService>();
  
  // 📦 Controllers + JSON
- builder.Services.AddControllers()
- .AddJsonOptions(x =>
- x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
- 
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
  // 🗄️ Banco de dados PostgreSQL
  builder.Services.AddDbContext<AppDbContext>(options =>
  {
