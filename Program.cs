@@ -68,6 +68,7 @@ builder.Services.AddControllers()
  builder.Services.AddScoped<MercadoPagoService>(); // 💳 Mercado Pago
  builder.Services.AddHttpClient();
  builder.Services.AddHttpContextAccessor();
+ builder.Services.AddHostedService<KeepAliveService>();
  
  // 🌐 CORS
  builder.Services.AddCors(options =>
