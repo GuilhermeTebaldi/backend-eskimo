@@ -148,3 +148,110 @@ Validar /swagger e painel.
 ✅ Testes via curl ou Swagger.
 ✅ Admin testado local (npm run dev).
 ✅ Push em main → Render aplica automaticamente.
+🔹 15. JSON em camelCase e ciclos (ESSENCIAL)
+Garanta saída em camelCase e evite loops JSON.
+// Program.cs
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+🔹 16. Políticas de autorização (admin x operator)
+Padronize as policies usadas pelos controllers.
+// Program.cs
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", p => p.RequireRole("admin"));
+    options.AddPolicy("RequireOperatorOrAdmin", p => p.RequireRole("admin", "operator"));
+});
+🔹 17. Claims do JWT (o que sai no token)
+Confirme que o token inclui estes claims para o front:
+// Services/TokenService.cs → GenerateToken(User user)
+new Claim(ClaimTypes.Name, user.Username ?? user.Email),
+new Claim(ClaimTypes.Email, user.Email),
+new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? "operator" : user.Role.ToLowerInvariant()),
+new Claim("permissions", string.IsNullOrWhiteSpace(user.Permissions) ? "{}" : user.Permissions),
+new Claim("isEnabled", user.IsEnabled ? "true" : "false"),
+🔹 18. Resposta do login (contrato estável pro front)
+Devolva tudo que o admin usa sem precisar decodificar JWT.
+// Controllers/AuthController.cs → POST /auth/login
+return Ok(new {
+  token,
+  username = user.Username ?? "",
+  role = (user.Role ?? "operator").ToLowerInvariant(),
+  permissions = user.Permissions ?? "{}",
+  isEnabled = user.IsEnabled
+});
+🔹 19. Endpoints e contratos críticos (resumo)
+/auth/login → { token, username, role, permissions, isEnabled }
+/auth/me → { email, username, role, permissions, isEnabled }
+/user
+GET → [] ou { items: [] }
+POST → { username, email, password, role, isEnabled, permissionsJson }
+PUT /user/{id} → campos opcionais { username,email,newPassword,role,isEnabled,permissionsJson }
+DELETE /user/{id}
+Regras: não remover/desativar admin raiz admin@eskimo.com; se for o único admin ativo, não permitir desativar nem trocar o role.
+/stock
+GET → [{ productId, efapi, palmital, passo }] camelCase
+POST /stock/{productId} → body { efapi, palmital, passo } números.
+/products/list?page=&pageSize=&includeArchived= → [] ou { items: [] }
+/products/{id}/archive PATCH → { isArchived: true|false }
+🔹 20. CORS (origens e credenciais)
+Liste todos os domínios do admin e do site. Mantenha AllowCredentials quando necessário.
+// Program.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(
+            "http://localhost:5173","https://localhost:5173",
+            "https://admin.eskimochapeco.com.br","https://www.admin.eskimochapeco.com.br",
+            "https://eskimochapeco.com.br","https://www.eskimochapeco.com.br",
+            "https://eskimosites.vercel.app","https://admin-panel-eskimo.vercel.app","https://site-eskimo.vercel.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()
+    );
+});
+🔹 21. Headers de proxy (Render) e Swagger com Bearer
+Você já usa UseForwardedHeaders. Mantenha o Swagger com segurança Bearer:
+// Swagger: já configurado. Garanta que a definição "Bearer" existe e o requisito também.
+🔹 22. Variáveis de ambiente (mínimo viável)
+Configure em Render e local:
+ConnectionStrings__Default=... (string completa do Postgres)
+Jwt__Key=<chave-secreta-robusta>
+Jwt__Issuer=EskimoAuth
+Jwt__Audience=EskimoClients
+ASPNETCORE_URLS=http://0.0.0.0:8080
+ASPNETCORE_ENVIRONMENT=Production
+🔹 23. Migração automática e logs úteis
+Já há db.Database.Migrate(). Adicione logs de conexão e ambiente no boot:
+Console.WriteLine($"ENV: {app.Environment.EnvironmentName}");
+Console.WriteLine($"ConnStr: {builder.Configuration.GetConnectionString("Default")}");
+🔹 24. Health e ping (para monitoria e CI)
+Rotas simples para checagem:
+// Program.cs
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }));
+app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
+🔹 25. Regras de segurança no UsersController (evitar regressões)
+Bloquear DELETE/PUT do admin raiz admin@eskimo.com.
+Bloquear troca de role do único admin ativo.
+Validar permissionsJson como JSON válido antes de salvar (tente desserializar e, se falhar, retornar 400).
+🔹 26. Padronização de nomes
+Sempre role minúsculo no banco e no token.
+permissions no token é string JSON.
+Respostas de listas podem ser [] ou { items: [] }, mas documente no controller e mantenha consistência.
+🔹 27. Interceptor de Auth no front (pré-requisito)
+O admin depende do header:
+Authorization: Bearer <token>
+Se retornar 401, limpar sessão e redirecionar para /.
+🔹 28. Checklist de contrato (quebra-zero)
+JSON camelCase ativo.
+Policies RequireAdmin e RequireOperatorOrAdmin cadastradas.
+/auth/login devolve { token, username, role, permissions, isEnabled }.
+/stock em camelCase.
+UsersController com regras de proteção do admin raiz e único admin.
+CORS com todos domínios do admin e do site.

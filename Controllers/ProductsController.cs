@@ -87,7 +87,7 @@ public IActionResult GetFiltered(
             product.PinnedTop = updated.PinnedTop;
 
             await _context.SaveChangesAsync();
-            return NoContent();
+            return Ok(new { message = "Produto atualizado com sucesso." });
         }
 
         // 🗑 DELETE: /api/products/{id}
