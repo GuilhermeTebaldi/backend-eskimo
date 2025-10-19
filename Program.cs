@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer; using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer; using System.Text; 
  using Microsoft.AspNetCore.Builder;
  using Microsoft.EntityFrameworkCore;
  using Microsoft.Extensions.DependencyInjection;
@@ -99,36 +99,38 @@ builder.Services.AddControllers()
  
  // 📚 Swagger
  builder.Services.AddEndpointsApiExplorer();
- builder.Services.AddSwaggerGen(c =>
- {
- c.SwaggerDoc("v1", new OpenApiInfo
- {
- Title = "e-Commerce API",
- Version = "v1",
- Description = "API modular para sistema de e-commerce"
- });
- 
- c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
- {
- In = ParameterLocation.Header,
- Description = "Insira o token JWT no formato: Bearer {seu token}",
- Name = "Authorization",
- Type = SecuritySchemeType.ApiKey,
- Scheme = "Bearer"
- });
- 
- c.AddSecurityRequirement(new OpenApiSecurityRequirement {
- {
- new OpenApiSecurityScheme {
- Reference = new OpenApiReference {
- Type = ReferenceType.SecurityScheme,
- Id = "Bearer"
- }
- },
- Array.Empty<string>()
- }
- });
- });
+builder.Services.AddSwaggerGen(c =>
+{
+c.SwaggerDoc("v1", new OpenApiInfo
+{
+Title = "e-Commerce API",
+Version = "v1",
+Description = "API modular para sistema de e-commerce"
+});
+
+c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+{
+In = ParameterLocation.Header,
+Description = "Insira o token JWT no formato: Bearer {seu token}",
+Name = "Authorization",
+Type = SecuritySchemeType.ApiKey,
+Scheme = "Bearer"
+});
+
+c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+{
+new OpenApiSecurityScheme {
+Reference = new OpenApiReference {
+Type = ReferenceType.SecurityScheme,
+Id = "Bearer"
+}
+},
+Array.Empty<string>()
+}
+});
+});
+
+builder.Services.AddSignalR();
  
  // 🔎 Log ConnectionString (debug)
  Console.WriteLine("🔑 ConnectionString atual:");
@@ -183,23 +185,25 @@ builder.Services.AddControllers()
  app.MapMethods("/ping", new[] { "GET", "POST", "HEAD", "OPTIONS" }, () => Results.Ok("pong"));
  
  // 🛠️ Endpoint para rodar importador manualmente
- app.MapPost("/run-importer", async (AppDbContext db) =>
- {
- try
- {
- Console.WriteLine("📥 Executando importação manual via /run-importer");
- await Task.Run(() => ImportProductsFromJson.Run(app));
- return Results.Ok("✅ Importação realizada com sucesso.");
- }
- catch (Exception ex)
- {
- Console.WriteLine("❌ Erro completo:");
- Console.WriteLine(ex.ToString());
- return Results.Problem("Erro ao importar produtos: " + ex.Message);
- }
- });
- 
- // ✅ Log final
- Console.WriteLine("✅ API iniciada e pronta para receber requisições.");
- 
- app.Run();
+app.MapPost("/run-importer", async (AppDbContext db) =>
+{
+try
+{
+Console.WriteLine("📥 Executando importação manual via /run-importer");
+await Task.Run(() => ImportProductsFromJson.Run(app));
+return Results.Ok("✅ Importação realizada com sucesso.");
+}
+catch (Exception ex)
+{
+Console.WriteLine("❌ Erro completo:");
+Console.WriteLine(ex.ToString());
+return Results.Problem("Erro ao importar produtos: " + ex.Message);
+}
+});
+
+app.MapHub<CSharpAssistant.API.Hubs.UpdateHub>("/updateHub");
+
+// ✅ Log final
+Console.WriteLine("✅ API iniciada e pronta para receber requisições.");
+
+app.Run();

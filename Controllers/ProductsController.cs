@@ -8,6 +8,8 @@ using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
+using CSharpAssistant.API.Hubs;
 
 namespace CSharpAssistant.API.Controllers
 {
@@ -18,25 +20,29 @@ namespace CSharpAssistant.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ProductService _productService;
+        private readonly IHubContext<UpdateHub> _hubContext;
 
-        public ProductsController(AppDbContext context, ProductService productService)
+        public ProductsController(
+            AppDbContext context,
+            ProductService productService,
+            IHubContext<UpdateHub> hubContext)
         {
             _context = context;
             _productService = productService;
+            _hubContext = hubContext;
         }
 
         [HttpGet("list")]
-public IActionResult GetFiltered(
-    [FromQuery] string? name,
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 100,
-    [FromQuery] string? store = null,
-    [FromQuery] bool includeArchived = false)
-{
-    var result = _productService.GetAllProducts(name, page, pageSize, store, includeArchived);
-    return Ok(result);
-}
-
+        public IActionResult GetFiltered(
+            [FromQuery] string? name,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 100,
+            [FromQuery] string? store = null,
+            [FromQuery] bool includeArchived = false)
+        {
+            var result = _productService.GetAllProducts(name, page, pageSize, store, includeArchived);
+            return Ok(result);
+        }
 
         // 📦 POST: /api/products
         [HttpPost]
@@ -59,6 +65,7 @@ public IActionResult GetFiltered(
 
             _context.Products.Add(entity);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
 
             foreach (var store in new[] { "efapi", "palmital", "passo" })
             {
@@ -66,6 +73,7 @@ public IActionResult GetFiltered(
             }
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
             return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
         }
 
@@ -87,6 +95,7 @@ public IActionResult GetFiltered(
             product.PinnedTop = updated.PinnedTop;
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
             return Ok(new { message = "Produto atualizado com sucesso." });
         }
 
@@ -100,6 +109,7 @@ public IActionResult GetFiltered(
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
             return NoContent();
         }
 
@@ -169,25 +179,27 @@ public IActionResult GetFiltered(
             }
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
             return Ok();
         }
 
-       // 🗄 Arquivar / Recolocar produto
-[HttpPatch("{id}/archive")]
-public async Task<IActionResult> Archive(int id, [FromBody] ArchiveRequest body)
-{
-    var product = await _context.Products.FindAsync(id);
-    if (product == null) return NotFound();
+        // 🗄 Arquivar / Recolocar produto
+        [HttpPatch("{id}/archive")]
+        public async Task<IActionResult> Archive(int id, [FromBody] ArchiveRequest body)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return NotFound();
 
-    product.IsArchived = body.IsArchived;
-    await _context.SaveChangesAsync();
-    return NoContent();
-}
+            product.IsArchived = body.IsArchived;
+            await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
+            return NoContent();
+        }
 
-public class ArchiveRequest
-{
-    public bool IsArchived { get; set; }
-}
+        public class ArchiveRequest
+        {
+            public bool IsArchived { get; set; }
+        }
 
     }
 }
