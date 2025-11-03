@@ -51,6 +51,22 @@ modelBuilder.Entity<User>()
             modelBuilder.Entity<PaymentConfig>()
                 .HasIndex(p => p.Store)
                 .IsUnique();
+
+            // === Settings: horários de funcionamento ===
+            modelBuilder.Entity<Setting>(b =>
+            {
+                b.Property(s => s.TimeZone)
+                 .HasMaxLength(64)
+                 .HasDefaultValue("America/Sao_Paulo");
+
+                b.Property(s => s.OpeningHoursJson)
+                 .HasColumnType("jsonb")
+                 .HasDefaultValueSql("'{}'::jsonb");
+
+                b.Property(s => s.ExceptionsJson)
+                 .HasColumnType("jsonb")
+                 .HasDefaultValueSql("'[]'::jsonb");
+            });
         }
     }
 }
