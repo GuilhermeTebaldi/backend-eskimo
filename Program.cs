@@ -194,10 +194,14 @@ builder.Services.AddSignalR();
      var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
      var method = context.Request.Method.ToUpperInvariant();
  
-     bool isAllowlisted =
-         path.StartsWith("/swagger") ||
-         path.StartsWith("/api/status") ||
-         (path.StartsWith("/api/settings") && method == "GET");
+    bool isAllowlisted =
+        path.StartsWith("/swagger") ||
+        path.StartsWith("/api/status") ||
+        // Admin deve funcionar sempre
+        path.StartsWith("/api/auth") ||          // login, refresh, etc.
+        path.StartsWith("/api/users") ||         // gestão de usuários
+        path.StartsWith("/api/settings") ||      // editar horários mesmo fechado
+        method == "OPTIONS";                     // CORS preflight
  
      if (isAllowlisted)
      {
@@ -205,9 +209,9 @@ builder.Services.AddSignalR();
          return;
      }
  
-     // Apenas bloqueia quando não for GET, ou seja, POST/PUT/PATCH/DELETE.
-     // Se quiser bloquear tudo inclusive GET de certos recursos, adapte aqui.
-     if (method == "GET")
+    // Apenas bloqueia quando não for GET, ou seja, POST/PUT/PATCH/DELETE.
+    // Se quiser bloquear tudo inclusive GET de certos recursos, adapte aqui.
+    if (method == "GET")
      {
          await next();
          return;
