@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CSharpAssistant.API.Data;
+using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,7 @@ namespace CSharpAssistant.API.Controllers
         }
 
         [HttpPut("{store}")]
-        public async Task<IActionResult> Put(string store, [FromBody] StoreSetting body)
+        public async Task<IActionResult> Put(string store, [FromBody] StoreSettingInput body)
         {
             var s = store?.Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(s))
