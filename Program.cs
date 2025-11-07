@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using CSharpAssistant.API.Scripts;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.Services;
+using CSharpAssistant.API.Models;
 
  var builder = WebApplication.CreateBuilder(args);
  
@@ -189,11 +190,11 @@ builder.Services.AddSignalR();
  // === Middleware de bloqueio fora do horário ===
  // Bloqueia métodos potencialmente mutantes quando loja fechada.
  // Allowlist: status, isOpen, swagger, settings GET.
- app.Use(async (context, next) =>
- {
-     var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
     var method = context.Request.Method?.ToUpperInvariant() ?? "GET";
- 
+
     bool isAllowlisted =
         path.StartsWith("/swagger") ||
         path.StartsWith("/healthz") ||
@@ -213,150 +214,88 @@ builder.Services.AddSignalR();
         await next();
         return;
     }
- 
-    // Apenas bloqueia quando não for GET, ou seja, POST/PUT/PATCH/DELETE.
-    // Se quiser bloquear tudo inclusive GET de certos recursos, adapte aqui.
+
     if (method == "GET")
-     {
-         await next();
-         return;
-     }
- 
-     // Carrega status isOpen
-     try
-     {
-         var db = context.RequestServices.GetRequiredService<CSharpAssistant.API.Data.AppDbContext>();
-         var setting = await db.Settings.AsNoTracking().FirstOrDefaultAsync();
- 
-         // Sem settings configurado => permite
-         if (setting == null)
-         {
-             await next();
-             return;
-         }
- 
-         // Reusa o cálculo chamando o controller logicamente: duplicamos apenas o essencial
-         var tzId = string.IsNullOrWhiteSpace(setting.TimeZone) ? "America/Sao_Paulo" : setting.TimeZone;
-         TimeZoneInfo tz;
-         try { tz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
-         catch { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo"); }
- 
-         var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
- 
-         bool isOpen = await IsOpenInternal(nowLocal, setting);
- 
-         if (!isOpen)
-         {
-             context.Response.StatusCode = 423; // Locked
-             context.Response.ContentType = "application/json";
-             var payload = JsonSerializer.Serialize(new { error = "Fora do horário de funcionamento." });
-             await context.Response.WriteAsync(payload);
-             return;
-         }
- 
-         await next();
-     }
-     catch
-     {
-         // Em falha de checagem, não bloqueia.
-         await next();
-     }
- 
-     // Função local para reaproveitar cálculo mínimo sem duplicar helpers públicos
-     static async Task<bool> IsOpenInternal(DateTime nowLocal, CSharpAssistant.API.Models.Setting setting)
-     {
-         // Parsing reduzido
-         Dictionary<string, List<(string start, string end)>> hours;
-         List<(string date, bool closed, List<(string start, string end)> ranges)> exceptions;
-         try
-         {
-             var hoursDict = JsonSerializer.Deserialize<Dictionary<string, List<Dictionary<string, string>>>>(
-                 string.IsNullOrWhiteSpace(setting.OpeningHoursJson) ? "{}" : setting.OpeningHoursJson
-             ) ?? new();
-             hours = hoursDict.ToDictionary(
-                 kv => kv.Key.ToLowerInvariant(),
-                 kv => kv.Value.Select(v => (v.GetValueOrDefault("start") ?? "00:00", v.GetValueOrDefault("end") ?? "00:00")).ToList()
-             );
-         }
-         catch { hours = new(); }
- 
-         try
-         {
-             var excList = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
-                 string.IsNullOrWhiteSpace(setting.ExceptionsJson) ? "[]" : setting.ExceptionsJson
-             ) ?? new();
-             exceptions = excList.Select(e =>
-             {
-                 var date = e.ContainsKey("date") ? e["date"]?.ToString() ?? "" : "";
-                 var closed = e.ContainsKey("closed") && e["closed"] is bool b && b;
-                 var ranges = new List<(string start, string end)>();
-                 if (e.TryGetValue("ranges", out var rv) && rv is JsonElement je && je.ValueKind == JsonValueKind.Array)
-                 {
-                     foreach (var it in je.EnumerateArray())
-                     {
-                         var s = it.TryGetProperty("start", out var js) ? js.GetString() ?? "00:00" : "00:00";
-                         var en = it.TryGetProperty("end", out var jee) ? jee.GetString() ?? "00:00" : "00:00";
-                         ranges.Add((s, en));
-                     }
-                 }
-                 return (date, closed, ranges);
-             }).ToList();
-         }
-         catch { exceptions = new(); }
- 
-         var dateKey = nowLocal.ToString("yyyy-MM-dd");
-         var dowKey = nowLocal.DayOfWeek switch
-         {
-             DayOfWeek.Monday => "monday",
-             DayOfWeek.Tuesday => "tuesday",
-             DayOfWeek.Wednesday => "wednesday",
-             DayOfWeek.Thursday => "thursday",
-             DayOfWeek.Friday => "friday",
-             DayOfWeek.Saturday => "saturday",
-             DayOfWeek.Sunday => "sunday",
-             _ => "monday"
-         };
- 
-         var exc = exceptions.FirstOrDefault(e => e.date == dateKey);
-         if (!string.IsNullOrEmpty(exc.date))
-         {
-             if (exc.closed) return false;
-             if (exc.ranges.Count > 0) return Within(nowLocal, exc.ranges);
-         }
- 
-         hours.TryGetValue(dowKey, out var ranges);
-         return Within(nowLocal, ranges ?? new());
- 
-         static bool Within(DateTime local, List<(string start, string end)> ranges)
-         {
-             foreach (var r in ranges)
-             {
-                 if (!Try(local.Date, r.start, out var s)) continue;
-                 if (!Try(local.Date, r.end, out var e)) continue;
-                 if (s <= e)
-                 {
-                     if (local >= s && local <= e) return true;
-                 }
-                 else // cruza meia-noite
-                 {
-                     if (local >= s || local <= e) return true;
-                 }
-             }
-             return false;
- 
-             static bool Try(DateTime d, string hhmm, out DateTime t)
-             {
-                 t = d;
-                 var parts = hhmm.Split(':');
-                 if (parts.Length != 2) return false;
-                 if (!int.TryParse(parts[0], out var h)) return false;
-                 if (!int.TryParse(parts[1], out var m)) return false;
-                 t = d.Date.AddHours(h).AddMinutes(m);
-                 return true;
-             }
-         }
-     }
- });
+    {
+        await next();
+        return;
+    }
+
+    string? store =
+        context.Request.Headers["X-Store"].FirstOrDefault()
+        ?? context.Request.Query["store"].FirstOrDefault();
+
+    if (string.IsNullOrWhiteSpace(store) && path.StartsWith("/api/orders") && method == "POST")
+    {
+        context.Request.EnableBuffering();
+        using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+        context.Request.Body.Position = 0;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("store", out var sProp) && sProp.ValueKind == JsonValueKind.String)
+            {
+                store = sProp.GetString();
+            }
+        }
+        catch
+        {
+            // ignore parse errors
+        }
+    }
+
+    try
+    {
+        var db = context.RequestServices.GetRequiredService<CSharpAssistant.API.Data.AppDbContext>();
+
+        string? tz = null;
+        string? hours = null;
+        string? exceptions = null;
+
+        if (!string.IsNullOrWhiteSpace(store))
+        {
+            var key = store.Trim().ToLowerInvariant();
+            var cfg = await db.Set<CSharpAssistant.API.Models.StoreSetting>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Store == key);
+            if (cfg != null)
+            {
+                tz = cfg.TimeZone;
+                hours = cfg.OpeningHoursJson;
+                exceptions = cfg.ExceptionsJson;
+            }
+        }
+
+        if (tz == null && hours == null && exceptions == null)
+        {
+            var global = await db.Settings.AsNoTracking().FirstOrDefaultAsync();
+            if (global == null)
+            {
+                await next();
+                return;
+            }
+
+            tz = global.TimeZone;
+            hours = global.OpeningHoursJson;
+            exceptions = global.ExceptionsJson;
+        }
+
+        var payload = StatusControllerStatic.EvaluateStatus(tz, hours, exceptions);
+        if (!payload.IsOpen)
+        {
+            context.Response.StatusCode = StatusCodes.Status423Locked;
+            await context.Response.WriteAsJsonAsync(new { error = payload.Message, nextOpening = payload.NextOpening });
+            return;
+        }
+
+        await next();
+    }
+    catch
+    {
+        await next();
+    }
+});
  
  app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
  
