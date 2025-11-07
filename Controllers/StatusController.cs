@@ -42,72 +42,31 @@ namespace CSharpAssistant.API.Models
                 return Ok(new { isOpen = true, message = "Sem configuração. Considerado aberto." });
             }
 
-            // Timezone
-            var tzId = string.IsNullOrWhiteSpace(setting.TimeZone) ? "America/Sao_Paulo" : setting.TimeZone;
-            TimeZoneInfo tz;
-            try { tz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
-            catch { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo"); }
+            var payload = EvaluateStatus(setting.TimeZone, setting.OpeningHoursJson, setting.ExceptionsJson);
+            return Ok(payload);
+        }
 
-            var nowUtc = DateTime.UtcNow;
-            var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, tz);
-            var dateKey = nowLocal.ToString("yyyy-MM-dd");
-            var dowKey = nowLocal.DayOfWeek switch
+        [HttpGet("isOpen/{store}")]
+        public async Task<IActionResult> GetIsOpenForStore(
+            [FromRoute] string store,
+            [FromServices] AppDbContext db)
+        {
+            var s = store?.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(s))
             {
-                DayOfWeek.Monday => "monday",
-                DayOfWeek.Tuesday => "tuesday",
-                DayOfWeek.Wednesday => "wednesday",
-                DayOfWeek.Thursday => "thursday",
-                DayOfWeek.Friday => "friday",
-                DayOfWeek.Saturday => "saturday",
-                DayOfWeek.Sunday => "sunday",
-                _ => "monday"
-            };
-
-            // Parse OpeningHours
-            var hours = ParseOpeningHours(setting.OpeningHoursJson);
-            var exceptions = ParseExceptions(setting.ExceptionsJson);
-
-            // Exceptions por data têm precedência
-            var exc = exceptions.FirstOrDefault(e => e.Date == dateKey);
-            if (exc != null)
-            {
-                if (exc.Closed == true)
-                {
-                    var next = FindNextOpening(nowLocal, tz, hours, exceptions);
-                    return Ok(new
-                    {
-                        isOpen = false,
-                        message = "Fechado hoje por exceção.",
-                        now = nowLocal.ToString("yyyy-MM-dd HH:mm"),
-                        nextOpening = next?.ToString("yyyy-MM-dd HH:mm")
-                    });
-                }
-                if (exc.Ranges?.Count > 0)
-                {
-                    var open = IsWithinRanges(nowLocal, exc.Ranges);
-                    var next = open ? null : FindNextOpening(nowLocal, tz, hours, exceptions);
-                    return Ok(new
-                    {
-                        isOpen = open,
-                        message = open ? "Aberto por faixa excepcional." : "Fora de faixa excepcional de hoje.",
-                        now = nowLocal.ToString("yyyy-MM-dd HH:mm"),
-                        nextOpening = next?.ToString("yyyy-MM-dd HH:mm")
-                    });
-                }
+                return BadRequest(new { error = "Loja inválida." });
             }
 
-            // Regra semanal padrão
-            hours.TryGetValue(dowKey, out var ranges);
-            var isOpen = IsWithinRanges(nowLocal, ranges ?? new List<TimeRange>());
-            var nextOpeningDefault = isOpen ? null : FindNextOpening(nowLocal, tz, hours, exceptions);
+            var setting = await db.Set<StoreSetting>().AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Store == s);
 
-            return Ok(new
+            if (setting == null)
             {
-                isOpen,
-                message = isOpen ? "Aberto" : "Fechado",
-                now = nowLocal.ToString("yyyy-MM-dd HH:mm"),
-                nextOpening = nextOpeningDefault?.ToString("yyyy-MM-dd HH:mm")
-            });
+                return Ok(new { isOpen = true, message = "Sem configuração da loja. Considerado aberto." });
+            }
+
+            var payload = EvaluateStatus(setting.TimeZone, setting.OpeningHoursJson, setting.ExceptionsJson);
+            return Ok(payload);
         }
 
         // ===== Helpers locais =====
@@ -212,6 +171,76 @@ namespace CSharpAssistant.API.Models
             catch { return new List<ExceptionDay>(); }
         }
 
+        private StatusResponse EvaluateStatus(string? timeZone, string? openingHoursJson, string? exceptionsJson)
+        {
+            var tzId = string.IsNullOrWhiteSpace(timeZone) ? "America/Sao_Paulo" : timeZone!;
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo"); }
+
+            var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            var dateKey = nowLocal.ToString("yyyy-MM-dd");
+            var dowKey = nowLocal.DayOfWeek switch
+            {
+                DayOfWeek.Monday => "monday",
+                DayOfWeek.Tuesday => "tuesday",
+                DayOfWeek.Wednesday => "wednesday",
+                DayOfWeek.Thursday => "thursday",
+                DayOfWeek.Friday => "friday",
+                DayOfWeek.Saturday => "saturday",
+                DayOfWeek.Sunday => "sunday",
+                _ => "monday"
+            };
+
+            var hours = ParseOpeningHours(openingHoursJson ?? "{}");
+            var exceptions = ParseExceptions(exceptionsJson ?? "[]");
+
+            var response = new StatusResponse
+            {
+                Now = nowLocal.ToString("yyyy-MM-dd HH:mm")
+            };
+
+            var exc = exceptions.FirstOrDefault(e => e.Date == dateKey);
+            if (exc != null)
+            {
+                if (exc.Closed == true)
+                {
+                    var next = FindNextOpening(nowLocal, tz, hours, exceptions);
+                    response.IsOpen = false;
+                    response.Message = "Fechado hoje por exceção.";
+                    response.NextOpening = next?.ToString("yyyy-MM-dd HH:mm");
+                    return response;
+                }
+
+                if (exc.Ranges?.Count > 0)
+                {
+                    var open = IsWithinRanges(nowLocal, exc.Ranges);
+                    response.IsOpen = open;
+                    response.Message = open
+                        ? "Aberto por faixa excepcional."
+                        : "Fora de faixa excepcional de hoje.";
+                    if (!open)
+                    {
+                        var next = FindNextOpening(nowLocal, tz, hours, exceptions);
+                        response.NextOpening = next?.ToString("yyyy-MM-dd HH:mm");
+                    }
+                    return response;
+                }
+            }
+
+            hours.TryGetValue(dowKey, out var ranges);
+            var openDefault = IsWithinRanges(nowLocal, ranges ?? new List<TimeRange>());
+            response.IsOpen = openDefault;
+            response.Message = openDefault ? "Aberto" : "Fechado";
+            if (!openDefault)
+            {
+                var next = FindNextOpening(nowLocal, tz, hours, exceptions);
+                response.NextOpening = next?.ToString("yyyy-MM-dd HH:mm");
+            }
+
+            return response;
+        }
+
         // Tipos auxiliares
         private class TimeRange
         {
@@ -223,6 +252,14 @@ namespace CSharpAssistant.API.Models
             [JsonPropertyName("date")] public string Date { get; set; } = ""; // yyyy-MM-dd
             [JsonPropertyName("closed")] public bool? Closed { get; set; }
             [JsonPropertyName("ranges")] public List<TimeRange>? Ranges { get; set; }
+        }
+
+        private class StatusResponse
+        {
+            [JsonPropertyName("isOpen")] public bool IsOpen { get; set; }
+            [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+            [JsonPropertyName("now")] public string Now { get; set; } = string.Empty;
+            [JsonPropertyName("nextOpening")] public string? NextOpening { get; set; }
         }
     }
 }

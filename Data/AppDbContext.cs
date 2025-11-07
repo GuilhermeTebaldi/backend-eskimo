@@ -18,6 +18,7 @@ namespace CSharpAssistant.API.Data
         public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
         public DbSet<Setting> Settings { get; set; }
         public DbSet<PaymentConfig> PaymentConfigs { get; set; }
+        public DbSet<StoreSetting> StoreSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -66,6 +67,14 @@ modelBuilder.Entity<User>()
                 b.Property(s => s.ExceptionsJson)
                  .HasColumnType("jsonb")
                  .HasDefaultValueSql("'[]'::jsonb");
+            });
+
+            modelBuilder.Entity<StoreSetting>(b =>
+            {
+                b.HasIndex(s => s.Store).IsUnique(); // uma config por loja
+                b.Property(s => s.TimeZone).HasMaxLength(64).HasDefaultValue("America/Sao_Paulo");
+                b.Property(s => s.OpeningHoursJson).HasColumnType("jsonb").HasDefaultValueSql("'{}'::jsonb");
+                b.Property(s => s.ExceptionsJson).HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb");
             });
         }
     }

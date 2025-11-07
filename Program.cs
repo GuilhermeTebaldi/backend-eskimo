@@ -192,16 +192,18 @@ builder.Services.AddSignalR();
  app.Use(async (context, next) =>
  {
      var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
-     var method = context.Request.Method.ToUpperInvariant();
+    var method = context.Request.Method?.ToUpperInvariant() ?? "GET";
  
     bool isAllowlisted =
         path.StartsWith("/swagger") ||
+        path.StartsWith("/healthz") ||
+        path.StartsWith("/ping") ||
+        path.StartsWith("/api/auth") ||
+        path.StartsWith("/api/users") ||
         path.StartsWith("/api/status") ||
-        // Admin deve funcionar sempre
-        path.StartsWith("/api/auth") ||          // login, refresh, etc.
-        path.StartsWith("/api/users") ||         // gestão de usuários
-        path.StartsWith("/api/settings") ||      // editar horários mesmo fechado
-        method == "OPTIONS";                     // CORS preflight
+        (path.StartsWith("/api/settings") && method == "GET") ||
+        path.StartsWith("/api/store-settings") ||
+        method == "OPTIONS";
  
      if (isAllowlisted)
      {
