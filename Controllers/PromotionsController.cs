@@ -47,7 +47,8 @@ namespace CSharpAssistant.API.Controllers
                 return Ok(null);
             }
 
-            return Ok(MapPromotion(promotion));
+            var store = ExtractStoreFromRequest();
+            return Ok(MapPromotion(promotion, store));
         }
 
         [HttpPut("active")]
@@ -115,7 +116,8 @@ namespace CSharpAssistant.API.Controllers
             await _hubContext.Clients.All.SendAsync("dataUpdated", "promotion");
             await _hubContext.Clients.All.SendAsync("dataUpdated", "products");
 
-            return Ok(MapPromotion(promotion));
+            var store = ExtractStoreFromRequest();
+            return Ok(MapPromotion(promotion, store));
         }
 
         [HttpDelete("active")]
@@ -136,8 +138,25 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
-        private static PromotionDTO MapPromotion(Promotion promotion)
+        private string? ExtractStoreFromRequest()
         {
+            string? store = HttpContext.Request.Headers["X-Store"].FirstOrDefault()
+                ?? HttpContext.Request.Query["store"].FirstOrDefault();
+            return string.IsNullOrWhiteSpace(store) ? null : store.Trim().ToLowerInvariant();
+        }
+
+        private static PromotionDTO MapPromotion(Promotion promotion, string? store)
+        {
+            int? stockValue = null;
+            if (!string.IsNullOrWhiteSpace(store))
+            {
+                stockValue = promotion.Product?.StoreStocks?
+                    .FirstOrDefault(s => s.Store != null && s.Store.Equals(store, StringComparison.OrdinalIgnoreCase))
+                    ?.Quantity;
+            }
+
+            stockValue ??= promotion.Product?.StoreStocks?.Sum(s => s.Quantity) ?? promotion.Product?.Stock;
+
             return new PromotionDTO
             {
                 Id = promotion.Id,
@@ -157,7 +176,7 @@ namespace CSharpAssistant.API.Controllers
                         Description = promotion.Product.Description,
                         Price = promotion.Product.Price,
                         ImageUrl = promotion.Product.ImageUrl,
-                        Stock = promotion.Product.Stock,
+                        Stock = stockValue ?? 0,
                         CategoryId = promotion.Product.CategoryId,
                         CategoryName = promotion.Product.Category?.Name,
                         SubcategoryId = promotion.Product.SubcategoryId,
