@@ -16,6 +16,7 @@ namespace CSharpAssistant.API.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<StoreStock> StoreStocks { get; set; }
         public DbSet<StoreProductVisibility> StoreProductVisibilities { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
         public DbSet<Setting> Settings { get; set; }
         public DbSet<PaymentConfig> PaymentConfigs { get; set; }
         public DbSet<StoreSetting> StoreSettings { get; set; } = null!;
@@ -75,6 +76,16 @@ modelBuilder.Entity<User>()
                 b.Property(s => s.TimeZone).HasMaxLength(64).HasDefaultValue("America/Sao_Paulo");
                 b.Property(s => s.OpeningHoursJson).HasColumnType("jsonb").HasDefaultValueSql("'{}'::jsonb");
                 b.Property(s => s.ExceptionsJson).HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb");
+            });
+
+            modelBuilder.Entity<Promotion>(b =>
+            {
+                b.Property(p => p.HighlightText).HasMaxLength(160);
+                b.Property(p => p.PreviousPrice).HasColumnType("numeric(18,2)");
+                b.Property(p => p.CurrentPrice).HasColumnType("numeric(18,2)");
+                b.Property(p => p.IsActive).HasDefaultValue(true);
+                b.Property(p => p.CreatedAt).HasDefaultValueSql("NOW()");
+                b.Property(p => p.UpdatedAt).HasDefaultValueSql("NOW()");
             });
         }
     }
