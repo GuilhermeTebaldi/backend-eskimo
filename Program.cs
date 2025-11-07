@@ -201,15 +201,18 @@ builder.Services.AddSignalR();
         path.StartsWith("/api/auth") ||
         path.StartsWith("/api/users") ||
         path.StartsWith("/api/status") ||
-        (path.StartsWith("/api/settings") && method == "GET") ||
+        path.StartsWith("/api/settings") ||
         path.StartsWith("/api/store-settings") ||
+        path.StartsWith("/api/storefront") ||
         method == "OPTIONS";
- 
-     if (isAllowlisted)
-     {
-         await next();
-         return;
-     }
+
+    var isAdmin = context.User?.IsInRole("admin") == true;
+
+    if (isAllowlisted || isAdmin)
+    {
+        await next();
+        return;
+    }
  
     // Apenas bloqueia quando não for GET, ou seja, POST/PUT/PATCH/DELETE.
     // Se quiser bloquear tudo inclusive GET de certos recursos, adapte aqui.

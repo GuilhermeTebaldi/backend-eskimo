@@ -180,6 +180,21 @@ namespace CSharpAssistant.API.Models
 
             var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
             var dateKey = nowLocal.ToString("yyyy-MM-dd");
+            var hoursJson = openingHoursJson ?? "{}";
+            var exceptionsJsonSafe = exceptionsJson ?? "[]";
+
+            var isEmptyHours = string.IsNullOrWhiteSpace(hoursJson) || hoursJson.Trim() == "{}";
+            var isEmptyExceptions = string.IsNullOrWhiteSpace(exceptionsJsonSafe) || exceptionsJsonSafe.Trim() == "[]";
+            if (isEmptyHours && isEmptyExceptions)
+            {
+                return new StatusResponse
+                {
+                    IsOpen = true,
+                    Message = "Sem configuração. Considerado aberto.",
+                    Now = nowLocal.ToString("yyyy-MM-dd HH:mm")
+                };
+            }
+
             var dowKey = nowLocal.DayOfWeek switch
             {
                 DayOfWeek.Monday => "monday",
@@ -192,8 +207,8 @@ namespace CSharpAssistant.API.Models
                 _ => "monday"
             };
 
-            var hours = ParseOpeningHours(openingHoursJson ?? "{}");
-            var exceptions = ParseExceptions(exceptionsJson ?? "[]");
+            var hours = ParseOpeningHours(hoursJson);
+            var exceptions = ParseExceptions(exceptionsJsonSafe);
 
             var response = new StatusResponse
             {
