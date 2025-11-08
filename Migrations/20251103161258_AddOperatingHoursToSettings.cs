@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿//CSharpAssistant.API/Migrations/20251103161258_AddOperatingHoursToSettings.cs
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
