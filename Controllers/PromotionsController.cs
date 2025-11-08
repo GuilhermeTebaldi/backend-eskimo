@@ -51,6 +51,23 @@ namespace CSharpAssistant.API.Controllers
             return Ok(MapPromotion(promotion, store));
         }
 
+        [HttpGet("list")]
+        public async Task<IActionResult> GetActivePromotions()
+        {
+            var store = ExtractStoreFromRequest();
+            var list = await _context.Promotions
+                .AsNoTracking()
+                .Where(p => p.IsActive)
+                .OrderByDescending(p => p.UpdatedAt)
+                .Include(p => p.Product).ThenInclude(p => p!.Category)
+                .Include(p => p.Product).ThenInclude(p => p!.Subcategory)
+                .Include(p => p.Product).ThenInclude(p => p!.StoreStocks!)
+                .Include(p => p.Product).ThenInclude(p => p!.Visibilities!)
+                .ToListAsync();
+
+            return Ok(list.Select(p => MapPromotion(p, store)).ToList());
+        }
+
         [HttpPut("active")]
         [HttpPut] // PUT /api/promotions
         public async Task<IActionResult> UpsertPromotion([FromBody] PromotionUpsertRequest body)
@@ -77,7 +94,7 @@ namespace CSharpAssistant.API.Controllers
                 return NotFound("Produto não encontrado.");
             }
 
-            var promotion = await _context.Promotions.FirstOrDefaultAsync(p => p.IsActive);
+            var promotion = await _context.Promotions.FirstOrDefaultAsync(p => p.IsActive && p.ProductId == body.ProductId);
 
             if (promotion == null)
             {
@@ -138,6 +155,17 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteById([FromRoute] int id)
+        {
+            var item = await _context.Promotions.FirstOrDefaultAsync(p => p.Id == id);
+            if (item is null) return NotFound();
+            _context.Promotions.Remove(item);
+            await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("dataUpdated", "promotion");
+            return NoContent();
+        }
+
         private string? ExtractStoreFromRequest()
         {
             string? store = HttpContext.Request.Headers["X-Store"].FirstOrDefault()
@@ -145,7 +173,7 @@ namespace CSharpAssistant.API.Controllers
             return string.IsNullOrWhiteSpace(store) ? null : store.Trim().ToLowerInvariant();
         }
 
-        private static PromotionDTO MapPromotion(Promotion promotion, string? store)
+        private static PromotionDTO MapPromotion(Promotion promotion, string? store = null)
         {
             int? stockValue = null;
             if (!string.IsNullOrWhiteSpace(store))

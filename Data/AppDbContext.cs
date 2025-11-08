@@ -86,6 +86,7 @@ modelBuilder.Entity<User>()
                 b.Property(p => p.IsActive).HasDefaultValue(true);
                 b.Property(p => p.CreatedAt).HasDefaultValueSql("NOW()");
                 b.Property(p => p.UpdatedAt).HasDefaultValueSql("NOW()");
+                b.HasIndex(p => new { p.ProductId, p.IsActive });
             });
         }
     }
