@@ -58,4 +58,10 @@ namespace CSharpAssistant.API.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
+
+    public class StoreCustomerPasswordAdminDTO
+    {
+        [Required, MinLength(6)]
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

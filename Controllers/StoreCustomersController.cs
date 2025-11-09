@@ -92,6 +92,102 @@ namespace CSharpAssistant.API.Controllers
             });
         }
 
+        [HttpGet]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> GetAll([FromQuery] string? q)
+        {
+            var query = _db.StoreCustomers.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLowerInvariant();
+                query = query.Where(c =>
+                    (c.FullName ?? "").ToLower().Contains(term) ||
+                    (c.Email ?? "").ToLower().Contains(term) ||
+                    (c.Nickname ?? "").ToLower().Contains(term));
+            }
+
+            var list = await query
+                .OrderByDescending(c => c.CreatedAt)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.FullName,
+                    c.Nickname,
+                    c.Email,
+                    c.PhoneNumber,
+                    c.CreatedAt,
+                    c.UpdatedAt,
+                    OrdersCount = _db.Orders.Count(o => o.StoreCustomerId == c.Id),
+                    TotalSpent = _db.Orders
+                        .Where(o => o.StoreCustomerId == c.Id)
+                        .Select(o => o.Total)
+                        .DefaultIfEmpty(0m)
+                        .Sum(),
+                    LastOrderAt = _db.Orders
+                        .Where(o => o.StoreCustomerId == c.Id)
+                        .Select(o => (DateTime?)o.CreatedAt)
+                        .OrderByDescending(o => o)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        [HttpGet("{id:int}")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var customer = await _db.StoreCustomers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            if (customer == null) return NotFound();
+
+            var orders = await _db.Orders
+                .AsNoTracking()
+                .Where(o => o.StoreCustomerId == customer.Id)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.Status,
+                    o.Store,
+                    o.Total,
+                    o.CreatedAt,
+                    o.DeliveryType,
+                    o.PhoneNumber
+                })
+                .ToListAsync();
+
+            var stats = new
+            {
+                totalOrders = orders.Count,
+                totalSpent = orders.Sum(o => o.Total),
+                lastOrderAt = orders.FirstOrDefault()?.CreatedAt
+            };
+
+            return Ok(new
+            {
+                customer = Map(customer),
+                orders,
+                stats
+            });
+        }
+
+        [HttpPut("{id:int}/password")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> AdminResetPassword(int id, [FromBody] StoreCustomerPasswordAdminDTO dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+                return BadRequest(new { message = "Nova senha inválida (mínimo 6 caracteres)." });
+
+            var customer = await _db.StoreCustomers.FirstOrDefaultAsync(c => c.Id == id);
+            if (customer == null) return NotFound();
+
+            customer.PasswordHash = PasswordHasher.Hash(dto.NewPassword);
+            customer.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpGet("me")]
         [Authorize(Roles = "store_customer")]
         public async Task<IActionResult> Me()
