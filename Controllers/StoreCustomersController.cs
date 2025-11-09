@@ -7,6 +7,7 @@ using CSharpAssistant.API.DTOs;
 using CSharpAssistant.API.Helpers;
 using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,8 @@ namespace CSharpAssistant.API.Controllers
 {
     [ApiController]
     [Route("api/store-customers")]
+    [Route("api/storecustomers")]
+    [EnableCors("AllowFrontend")]
     public class StoreCustomersController : ControllerBase
     {
         private readonly AppDbContext _db;

@@ -182,13 +182,13 @@ builder.Services.AddSignalR();
  });
  }
  
- app.UseRouting();
- app.UseCors("AllowFrontend");
- app.UseAuthentication();
- app.UseAuthorization(); 
- 
- // === Middleware de bloqueio fora do horário ===
- // Bloqueia métodos potencialmente mutantes quando loja fechada.
+app.UseRouting();
+app.UseCors("AllowFrontend"); // aplica política CORS antes de Auth
+app.UseAuthentication();
+app.UseAuthorization(); 
+
+// === Middleware de bloqueio fora do horário ===
+// Bloqueia métodos potencialmente mutantes quando loja fechada.
  // Allowlist: status, isOpen, swagger, settings GET.
 app.Use(async (context, next) =>
 {
@@ -298,8 +298,12 @@ app.Use(async (context, next) =>
         await next();
     }
 });
- 
- app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
+
+// Responde a qualquer preflight OPTIONS com 200
+app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok())
+   .WithDisplayName("CorsPreflight");
+
+app.MapControllers(); // 🚨 expõe Controllers (Products, Payments, etc.)
  
  // 🧪 Rotas teste
  app.MapGet("/", () => "🚀 e-Commerce API rodando com sucesso! Por: Guilherme Tebaldi");
