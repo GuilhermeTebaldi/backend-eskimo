@@ -29,6 +29,14 @@ namespace CSharpAssistant.API.Controllers
             _tokenService = tokenService;
         }
 
+        [HttpOptions]
+        [AllowAnonymous]
+        public IActionResult OptionsRoot() => Ok();
+
+        [HttpOptions("{*any}")]
+        [AllowAnonymous]
+        public IActionResult OptionsAny() => Ok();
+
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] StoreCustomerRegisterDTO dto)

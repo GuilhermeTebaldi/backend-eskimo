@@ -78,33 +78,46 @@ builder.Services.AddControllers()
  builder.Services.AddHostedService<KeepAliveService>();
  
  // 🌐 CORS
- builder.Services.AddCors(options =>
- {
- options.AddPolicy("AllowFrontend", policy =>
- {
- policy.WithOrigins(
- "http://localhost:5173",
- "http://127.0.0.1:5173",
- "https://localhost:5173",
- "http://localhost:5174",
- "https://127.0.0.1:5173",
- 
- // Admin / Site públicos
- "https://www.admin.eskimochapeco.com.br",
- "https://admin.eskimochapeco.com.br",
- "https://eskimochapeco.com.br",
- "https://www.eskimochapeco.com.br",
- 
- // Vercel antigos/atuais
- "https://eskimosites.vercel.app",
- "https://admin-panel-eskimo.vercel.app",
- "https://site-eskimo.vercel.app"
- )
- .AllowAnyHeader()
- .AllowAnyMethod()
- .AllowCredentials(); // habilite se precisar enviar cookies/autenticação cross-site
- });
- });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        var allowed = new[]
+        {
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://localhost:5173",
+            "https://127.0.0.1:5173",
+
+            "https://www.admin.eskimochapeco.com.br",
+            "https://admin.eskimochapeco.com.br",
+            "https://eskimochapeco.com.br",
+            "https://www.eskimochapeco.com.br",
+
+            "https://eskimosites.vercel.app",
+            "https://admin-panel-eskimo.vercel.app",
+            "https://site-eskimo.vercel.app"
+        };
+
+        policy
+            .SetIsOriginAllowed(origin =>
+            {
+                if (allowed.Contains(origin)) return true;
+                try
+                {
+                    var host = new Uri(origin).Host.ToLowerInvariant();
+                    return host.EndsWith("eskimochapeco.com.br");
+                }
+                catch
+                {
+                    return false;
+                }
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
  
  // 📚 Swagger
  builder.Services.AddEndpointsApiExplorer();
