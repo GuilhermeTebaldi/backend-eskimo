@@ -27,6 +27,7 @@ namespace CSharpAssistant.API.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] StoreCustomerRegisterDTO dto)
         {
             if (!ModelState.IsValid)
@@ -40,11 +41,15 @@ namespace CSharpAssistant.API.Controllers
             if (exists)
                 return Conflict(new { message = "E-mail já cadastrado." });
 
+            var nickname = string.IsNullOrWhiteSpace(dto.Nickname)
+                ? dto.FullName
+                : dto.Nickname;
+
             var customer = new StoreCustomer
             {
                 Email = email,
                 FullName = dto.FullName.Trim(),
-                Nickname = dto.Nickname.Trim(),
+                Nickname = nickname?.Trim() ?? string.Empty,
                 PasswordHash = PasswordHasher.Hash(dto.Password),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -62,6 +67,7 @@ namespace CSharpAssistant.API.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] StoreCustomerLoginDTO dto)
         {
             if (!ModelState.IsValid)
