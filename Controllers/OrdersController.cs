@@ -1,9 +1,12 @@
+using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSharpAssistant.API.Models;
 using CSharpAssistant.API.Data;
 using CSharpAssistant.API.DTOs;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace CSharpAssistant.API.Controllers
@@ -75,6 +78,7 @@ namespace CSharpAssistant.API.Controllers
                 DeliveryFee = fee,
                 Status = "pendente",
                 PhoneNumber = dto.PhoneNumber,
+                StoreCustomerId = GetStoreCustomerId(),
                 Items = dto.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
@@ -127,6 +131,7 @@ namespace CSharpAssistant.API.Controllers
                     order.Store,
                     order.Total,
                     order.Status,
+                    order.StoreCustomerId,
                     order.PhoneNumber,
                     order.DeliveryFee,
                     order.CreatedAt,
@@ -263,6 +268,34 @@ namespace CSharpAssistant.API.Controllers
             return Ok(new { message = "Todos os pedidos foram excluídos com sucesso." });
         }
 
+        // 🟢 GET: Pedidos do cliente autenticado
+        [HttpGet("my")]
+        [Authorize(Roles = "store_customer")]
+        public async Task<IActionResult> GetMyOrders()
+        {
+            var customerId = GetStoreCustomerId();
+            if (customerId == null)
+                return Unauthorized(new { message = "Cliente não identificado." });
+
+            var orders = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.StoreCustomerId == customerId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.Status,
+                    o.Store,
+                    o.Total,
+                    o.CreatedAt,
+                    o.DeliveryType,
+                    o.PhoneNumber
+                })
+                .ToListAsync();
+
+            return Ok(orders);
+        }
+
         // 🟢 GET: Buscar pedido por ID (para polling no front)
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
@@ -280,7 +313,10 @@ namespace CSharpAssistant.API.Controllers
                 order.Status,
                 order.Store,
                 order.CustomerName,
+                order.StoreCustomerId,
                 order.Total,
+                order.CreatedAt,
+                order.DeliveryType,
                 order.DeliveryFee,
                 order.PhoneNumber,
                 order.WhatsappNotifiedAt,
@@ -294,6 +330,18 @@ namespace CSharpAssistant.API.Controllers
                     i.Store
                 }).ToList()
             });
+        }
+
+        private int? GetStoreCustomerId()
+        {
+            var role = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
+            if (string.IsNullOrWhiteSpace(role) || !role.Equals("store_customer", System.StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var idClaim = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(idClaim, out var id))
+                return id;
+            return null;
         }
     }
 }

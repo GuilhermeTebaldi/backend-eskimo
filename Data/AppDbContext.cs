@@ -20,6 +20,7 @@ namespace CSharpAssistant.API.Data
         public DbSet<Setting> Settings { get; set; }
         public DbSet<PaymentConfig> PaymentConfigs { get; set; }
         public DbSet<StoreSetting> StoreSettings { get; set; } = null!;
+        public DbSet<StoreCustomer> StoreCustomers { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +29,22 @@ namespace CSharpAssistant.API.Data
 modelBuilder.Entity<User>()
     .HasIndex(u => u.Email)
     .IsUnique();
+
+            modelBuilder.Entity<StoreCustomer>(b =>
+            {
+                b.HasIndex(c => c.Email).IsUnique();
+                b.Property(c => c.Email).IsRequired();
+                b.Property(c => c.FullName).HasMaxLength(160);
+                b.Property(c => c.Nickname).HasMaxLength(80);
+                b.Property(c => c.ProfileImageBase64).HasColumnType("text");
+                b.Property(c => c.CreatedAt).HasDefaultValueSql("NOW()");
+                b.Property(c => c.UpdatedAt).HasDefaultValueSql("NOW()");
+
+                b.HasMany(c => c.Orders)
+                    .WithOne(o => o.StoreCustomer)
+                    .HasForeignKey(o => o.StoreCustomerId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
 
 modelBuilder.Entity<User>()
     .Property(u => u.Permissions)
