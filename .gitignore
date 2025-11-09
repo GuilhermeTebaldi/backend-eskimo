@@ -5,3 +5,5 @@ obj/
 *.userprefs
 .vs/
 .DS_Store
+out/
+**/out/
