@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -78,46 +79,41 @@ builder.Services.AddControllers()
  builder.Services.AddHostedService<KeepAliveService>();
  
  // 🌐 CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        var allowed = new[]
-        {
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "https://localhost:5173",
-            "https://127.0.0.1:5173",
+ builder.Services.AddCors(options =>
+ {
+     options.AddPolicy("AllowFrontend", policy =>
+     {
+         var allowed = new[]
+         {
+             "http://localhost:5173",
+             "http://127.0.0.1:5173",
+             "https://localhost:5173",
+             "https://127.0.0.1:5173",
+             "https://www.admin.eskimochapeco.com.br",
+             "https://admin.eskimochapeco.com.br",
+             "https://eskimochapeco.com.br",
+             "https://www.eskimochapeco.com.br"
+         };
 
-            "https://www.admin.eskimochapeco.com.br",
-            "https://admin.eskimochapeco.com.br",
-            "https://eskimochapeco.com.br",
-            "https://www.eskimochapeco.com.br",
-
-            "https://eskimosites.vercel.app",
-            "https://admin-panel-eskimo.vercel.app",
-            "https://site-eskimo.vercel.app"
-        };
-
-        policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (allowed.Contains(origin)) return true;
-                try
-                {
-                    var host = new Uri(origin).Host.ToLowerInvariant();
-                    return host.EndsWith("eskimochapeco.com.br");
-                }
-                catch
-                {
-                    return false;
-                }
-            })
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
+         policy
+             .SetIsOriginAllowed(origin =>
+             {
+                 if (allowed.Contains(origin)) return true;
+                 try
+                 {
+                     var host = new Uri(origin).Host.ToLowerInvariant();
+                     return host.EndsWith("eskimochapeco.com.br");
+                 }
+                 catch
+                 {
+                     return false;
+                 }
+             })
+             .AllowAnyHeader()
+             .AllowAnyMethod()
+             .AllowCredentials();
+     });
+ });
  
  // 📚 Swagger
  builder.Services.AddEndpointsApiExplorer();
@@ -159,6 +155,47 @@ builder.Services.AddSignalR();
  Console.WriteLine(builder.Configuration.GetConnectionString("Default"));
  
  var app = builder.Build();
+
+app.Use(async (ctx, next) =>
+{
+    var origin = ctx.Request.Headers["Origin"].ToString();
+    if (!string.IsNullOrEmpty(origin))
+    {
+        var allow = false;
+        try
+        {
+            var host = new Uri(origin).Host.ToLowerInvariant();
+            var allowed = new[]
+            {
+                "www.admin.eskimochapeco.com.br",
+                "admin.eskimochapeco.com.br",
+                "eskimochapeco.com.br",
+                "www.eskimochapeco.com.br",
+                "localhost",
+                "127.0.0.1"
+            };
+            allow = allowed.Any(h => host == h || host.EndsWith("." + h));
+        }
+        catch { allow = false; }
+
+        if (allow)
+        {
+            ctx.Response.Headers["Access-Control-Allow-Origin"] = origin;
+            ctx.Response.Headers["Vary"] = "Origin";
+            ctx.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            ctx.Response.Headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type";
+            ctx.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
+
+            if (HttpMethods.IsOptions(ctx.Request.Method))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status204NoContent;
+                return;
+            }
+        }
+    }
+
+    await next();
+});
  
  // 📄 Licença QuestPDF
  QuestPDF.Settings.License = LicenseType.Community;
