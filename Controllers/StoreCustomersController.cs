@@ -107,9 +107,38 @@ namespace CSharpAssistant.API.Controllers
                     (c.Nickname ?? "").ToLower().Contains(term));
             }
 
-            var list = await query
+            var customers = await query
                 .OrderByDescending(c => c.CreatedAt)
-                .Select(c => new
+                .ToListAsync();
+
+            var ids = customers.Select(c => c.Id).ToList();
+            var statsDict = new Dictionary<int, (int OrdersCount, decimal TotalSpent, DateTime? LastOrderAt)>();
+
+            if (ids.Count > 0)
+            {
+                var stats = await _db.Orders
+                    .AsNoTracking()
+                    .Where(o => o.StoreCustomerId.HasValue && ids.Contains(o.StoreCustomerId.Value))
+                    .GroupBy(o => o.StoreCustomerId!.Value)
+                    .Select(g => new
+                    {
+                        CustomerId = g.Key,
+                        OrdersCount = g.Count(),
+                        TotalSpent = g.Sum(o => o.Total),
+                        LastOrderAt = g.Max(o => (DateTime?)o.CreatedAt)
+                    })
+                    .ToListAsync();
+
+                statsDict = stats.ToDictionary(
+                    x => x.CustomerId,
+                    x => (x.OrdersCount, x.TotalSpent, x.LastOrderAt)
+                );
+            }
+
+            var payload = customers.Select(c =>
+            {
+                statsDict.TryGetValue(c.Id, out var stat);
+                return new
                 {
                     c.Id,
                     c.FullName,
@@ -118,24 +147,13 @@ namespace CSharpAssistant.API.Controllers
                     c.PhoneNumber,
                     c.CreatedAt,
                     c.UpdatedAt,
-                    OrdersCount = _db.Set<Order>().Count(o => o.StoreCustomerId == c.Id),
-    
+                    OrdersCount = stat.OrdersCount,
+                    TotalSpent = stat.TotalSpent,
+                    LastOrderAt = stat.LastOrderAt
+                };
+            });
 
-                    TotalSpent = _db.Orders
-                        .Where(o => o.StoreCustomerId == c.Id)
-                        .Select(o => o.Total)
-                        .DefaultIfEmpty(0m)
-                        .Sum(),
-                    LastOrderAt = _db.Set<Order>()
-
-                        .Where(o => o.StoreCustomerId == c.Id)
-                        .Select(o => (DateTime?)o.CreatedAt)
-                        .OrderByDescending(o => o)
-                        .FirstOrDefault()
-                })
-                .ToListAsync();
-
-            return Ok(list);
+            return Ok(payload);
         }
 
         [HttpGet("{id:int}")]
