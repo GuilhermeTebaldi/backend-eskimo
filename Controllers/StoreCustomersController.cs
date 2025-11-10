@@ -1,3 +1,4 @@
+//CSharpAssistant.API/Controllers/StoreCustomersController.cs
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -28,14 +29,6 @@ namespace CSharpAssistant.API.Controllers
             _db = db;
             _tokenService = tokenService;
         }
-
-        [HttpOptions]
-        [AllowAnonymous]
-        public IActionResult OptionsRoot() => Ok();
-
-        [HttpOptions("{*any}")]
-        [AllowAnonymous]
-        public IActionResult OptionsAny() => Ok();
 
         [HttpPost("register")]
         [AllowAnonymous]
@@ -126,12 +119,15 @@ namespace CSharpAssistant.API.Controllers
                     c.CreatedAt,
                     c.UpdatedAt,
                     OrdersCount = _db.Set<Order>().Count(o => o.StoreCustomerId == c.Id),
-                    TotalSpent = _db.Set<Order>()
+    
+
+                    TotalSpent = _db.Orders
                         .Where(o => o.StoreCustomerId == c.Id)
                         .Select(o => o.Total)
                         .DefaultIfEmpty(0m)
                         .Sum(),
                     LastOrderAt = _db.Set<Order>()
+
                         .Where(o => o.StoreCustomerId == c.Id)
                         .Select(o => (DateTime?)o.CreatedAt)
                         .OrderByDescending(o => o)
@@ -150,6 +146,7 @@ namespace CSharpAssistant.API.Controllers
             if (customer == null) return NotFound();
 
             var orders = await _db.Set<Order>()
+
                 .AsNoTracking()
                 .Where(o => o.StoreCustomerId == customer.Id)
                 .OrderByDescending(o => o.CreatedAt)
@@ -244,6 +241,7 @@ namespace CSharpAssistant.API.Controllers
                 return Unauthorized(new { message = "Cliente não encontrado." });
 
             var orders = await _db.Set<Order>()
+
                 .AsNoTracking()
                 .Where(o => o.StoreCustomerId == customer.Id)
                 .OrderByDescending(o => o.CreatedAt)
