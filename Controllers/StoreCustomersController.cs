@@ -125,13 +125,13 @@ namespace CSharpAssistant.API.Controllers
                     c.PhoneNumber,
                     c.CreatedAt,
                     c.UpdatedAt,
-                    OrdersCount = _db.Orders.Count(o => o.StoreCustomerId == c.Id),
-                    TotalSpent = _db.Orders
+                    OrdersCount = _db.Set<Order>().Count(o => o.StoreCustomerId == c.Id),
+                    TotalSpent = _db.Set<Order>()
                         .Where(o => o.StoreCustomerId == c.Id)
                         .Select(o => o.Total)
                         .DefaultIfEmpty(0m)
                         .Sum(),
-                    LastOrderAt = _db.Orders
+                    LastOrderAt = _db.Set<Order>()
                         .Where(o => o.StoreCustomerId == c.Id)
                         .Select(o => (DateTime?)o.CreatedAt)
                         .OrderByDescending(o => o)
@@ -149,7 +149,7 @@ namespace CSharpAssistant.API.Controllers
             var customer = await _db.StoreCustomers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
             if (customer == null) return NotFound();
 
-            var orders = await _db.Orders
+            var orders = await _db.Set<Order>()
                 .AsNoTracking()
                 .Where(o => o.StoreCustomerId == customer.Id)
                 .OrderByDescending(o => o.CreatedAt)
@@ -243,7 +243,7 @@ namespace CSharpAssistant.API.Controllers
             if (customer == null)
                 return Unauthorized(new { message = "Cliente não encontrado." });
 
-            var orders = await _db.Orders
+            var orders = await _db.Set<Order>()
                 .AsNoTracking()
                 .Where(o => o.StoreCustomerId == customer.Id)
                 .OrderByDescending(o => o.CreatedAt)
