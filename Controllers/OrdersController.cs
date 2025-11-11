@@ -65,6 +65,12 @@ namespace CSharpAssistant.API.Controllers
                 fee = clientFee > min ? clientFee : min; // max(cliente, mínimo)
             }
 
+            var normalizedPaymentMethod = string.IsNullOrWhiteSpace(dto.PaymentMethod)
+                ? "mercado_pago"
+                : dto.PaymentMethod.Trim().ToLowerInvariant();
+            if (normalizedPaymentMethod != "mercado_pago" && normalizedPaymentMethod != "cash")
+                normalizedPaymentMethod = "mercado_pago";
+
             var order = new Order
             {
                 CustomerName = dto.CustomerName,
@@ -77,6 +83,7 @@ namespace CSharpAssistant.API.Controllers
                 Total = dto.Total,
                 DeliveryFee = fee,
                 Status = "pendente",
+                PaymentMethod = normalizedPaymentMethod,
                 PhoneNumber = dto.PhoneNumber,
                 StoreCustomerId = GetStoreCustomerId(),
                 Items = dto.Items.Select(i => new OrderItem
@@ -131,6 +138,7 @@ namespace CSharpAssistant.API.Controllers
                     order.Store,
                     order.Total,
                     order.Status,
+                    order.PaymentMethod,
                     order.StoreCustomerId,
                     order.PhoneNumber,
                     order.DeliveryFee,
@@ -285,6 +293,7 @@ namespace CSharpAssistant.API.Controllers
                 {
                     o.Id,
                     o.Status,
+                    o.PaymentMethod,
                     o.Store,
                     o.Total,
                     o.CreatedAt,
@@ -318,6 +327,7 @@ namespace CSharpAssistant.API.Controllers
                 order.CreatedAt,
                 order.DeliveryType,
                 order.DeliveryFee,
+                order.PaymentMethod,
                 order.PhoneNumber,
                 order.WhatsappNotifiedAt,
                 Items = order.Items.Select(i => new

@@ -14,6 +14,7 @@ namespace CSharpAssistant.API.DTOs
         public string? Complement { get; set; }
         public decimal Total { get; set; }
         public decimal DeliveryFee { get; set; }
+        public string PaymentMethod { get; set; } = "mercado_pago";
 
         public List<OrderItemDTO> Items { get; set; }
     }

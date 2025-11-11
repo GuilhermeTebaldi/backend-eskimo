@@ -16,6 +16,7 @@ public class Order
     public string Store { get; set; } = string.Empty;
     public decimal Total { get; set; }
     public string Status { get; set; } = "pendente"; // ou "pago", "entregue"
+    public string PaymentMethod { get; set; } = "mercado_pago";
     public string? PhoneNumber { get; set; } // WhatsApp do cliente
     public decimal DeliveryFee { get; set; }  // 💸 valor calculado pela distância
     public string? ImageUrl { get; set; }

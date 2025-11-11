@@ -22,6 +22,7 @@ namespace CSharpAssistant.API.DTOs
         public decimal DeliveryFee { get; set; }
 
         public string Status { get; set; }
+        public string PaymentMethod { get; set; }
         // DTOs/OrderDTO.cs
 
 public string? CustomerName { get; set; }

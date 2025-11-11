@@ -172,6 +172,7 @@ namespace CSharpAssistant.API.Controllers
                 {
                     o.Id,
                     o.Status,
+                    o.PaymentMethod,
                     o.Store,
                     o.Total,
                     o.CreatedAt,
