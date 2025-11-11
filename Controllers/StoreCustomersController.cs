@@ -211,6 +211,19 @@ namespace CSharpAssistant.API.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> DeleteCustomer(int id)
+        {
+            var customer = await _db.StoreCustomers.FirstOrDefaultAsync(c => c.Id == id);
+            if (customer == null)
+                return NotFound();
+
+            _db.StoreCustomers.Remove(customer);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpGet("me")]
         [Authorize(Roles = "store_customer")]
         public async Task<IActionResult> Me()
