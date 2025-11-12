@@ -207,6 +207,68 @@ namespace CSharpAssistant.API.Controllers
 
         }
 
+        [HttpGet("mp/status/{orderId:int}")]
+        public async Task<IActionResult> SyncOrderStatusFromGateway(int orderId, CancellationToken cancellationToken)
+        {
+            if (orderId <= 0)
+                return BadRequest(new { message = "orderId inválido." });
+
+            var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
+
+            var normalized = (order.Status ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalized == "pago" || normalized == "entregue")
+            {
+                return Ok(new
+                {
+                    orderId = order.Id,
+                    status = order.Status,
+                    synced = false,
+                    providerStatus = normalized,
+                    paymentMethod = order.PaymentMethod
+                });
+            }
+
+            if (!string.Equals(order.PaymentMethod?.Trim(), "mercado_pago", StringComparison.OrdinalIgnoreCase))
+            {
+                return Ok(new
+                {
+                    orderId = order.Id,
+                    status = order.Status,
+                    synced = false,
+                    providerStatus = normalized,
+                    paymentMethod = order.PaymentMethod
+                });
+            }
+
+            var info = await _mp.TryGetPaymentStatusByExternalReferenceAsync(order.Id, cancellationToken);
+            if (info != null && string.Equals(info.Value.status, "approved", StringComparison.OrdinalIgnoreCase))
+            {
+                order.Status = "pago";
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Order {OrderId} sincronizado como PAGO via /mp/status (payment {PaymentId}).",
+                    order.Id, info.Value.paymentId);
+                return Ok(new
+                {
+                    orderId = order.Id,
+                    status = order.Status,
+                    synced = true,
+                    providerStatus = info.Value.status,
+                    paymentId = info.Value.paymentId
+                });
+            }
+
+            return Ok(new
+            {
+                orderId = order.Id,
+                status = order.Status,
+                synced = false,
+                providerStatus = info?.status,
+                paymentId = info?.paymentId
+            });
+        }
+
         // Webhook MP
         [HttpOptions("mp/webhook")]
         public IActionResult WebhookOptions() => Ok();

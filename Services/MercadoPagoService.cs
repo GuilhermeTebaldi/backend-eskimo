@@ -263,6 +263,57 @@ namespace CSharpAssistant.API.Services
             return null;
         }
 
+        public async Task<(string status, string externalReference, string? paymentId)?> TryGetPaymentStatusByExternalReferenceAsync(int orderId, CancellationToken ct = default)
+        {
+            var externalReference = orderId.ToString();
+
+            var tokens = await _db.Set<PaymentConfig>()
+                .AsNoTracking()
+                .Where(c => c.IsActive && c.Provider.ToLower() == "mercadopago" && !string.IsNullOrWhiteSpace(c.MpAccessToken))
+                .Select(c => c.MpAccessToken!)
+                .Distinct()
+                .ToListAsync(ct);
+
+            foreach (var token in tokens)
+            {
+                try
+                {
+                    var url =
+                        $"https://api.mercadopago.com/v1/payments/search?external_reference={Uri.EscapeDataString(externalReference)}&sort=date_created&criteria=desc&limit=5";
+
+                    using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                    req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    req.Headers.Accept.ParseAdd("application/json");
+
+                    using var resp = await _http.SendAsync(req, ct);
+                    if (!resp.IsSuccessStatusCode) continue;
+
+                    var body = await resp.Content.ReadAsStringAsync(ct);
+                    using var doc = JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+                    var results = root.GetPropertyOrDefault("results");
+                    if (results == null || results.Value.ValueKind != JsonValueKind.Array)
+                        continue;
+
+                    foreach (var result in results.Value.EnumerateArray())
+                    {
+                        var status = result.GetPropertyOrDefault("status")?.GetString() ?? "";
+                        var extRef = result.GetPropertyOrDefault("external_reference")?.GetString() ?? "";
+                        var paymentId = result.GetPropertyOrDefault("id")?.GetInt64().ToString();
+
+                        if (!string.IsNullOrWhiteSpace(status) && !string.IsNullOrWhiteSpace(extRef))
+                            return (status, extRef, paymentId);
+                    }
+                }
+                catch
+                {
+                    // ignore and try next token
+                }
+            }
+
+            return null;
+        }
+
         public async Task<int?> TryGetOrderIdByPreferenceIdAsync(string prefId, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(prefId)) return null;
