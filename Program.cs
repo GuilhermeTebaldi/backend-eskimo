@@ -257,6 +257,7 @@ app.Use(async (context, next) =>
         path.StartsWith("/api/storefront") ||
         path.StartsWith("/api/promotions") ||
         path.StartsWith("/api/store-customers") ||
+        path.StartsWith("/api/payments") ||
         method == "OPTIONS";
 
     var isAdmin = context.User?.IsInRole("admin") == true;
