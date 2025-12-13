@@ -168,6 +168,43 @@ namespace CSharpAssistant.API.Controllers
             return Ok(new { id = order.Id });
         }
 
+        [Authorize(Policy = "RequireAdmin")]
+        [HttpPost("mark-printed-bulk")]
+        public async Task<IActionResult> MarkPrintedBulk([FromBody] MarkPrintedBulkRequest request)
+        {
+            if (request == null)
+                return BadRequest(new { message = "Requisição inválida." });
+
+            if (string.IsNullOrWhiteSpace(request.Store))
+                return BadRequest(new { message = "Loja é obrigatória." });
+
+            if (request.BeforeUtc == default)
+                return BadRequest(new { message = "beforeUtc é obrigatório." });
+
+            var store = request.Store.Trim().ToLowerInvariant();
+
+            var orders = await _context.Orders
+                .Where(o =>
+                    o.PrintedAtUtc == null &&
+                    o.Store != null &&
+                    o.Store.ToLower() == store &&
+                    o.CreatedAt <= request.BeforeUtc)
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+            foreach (var o in orders)
+            {
+                o.PrintedAtUtc = now;
+                o.PrintReason = string.IsNullOrWhiteSpace(request.Reason) ? "bootstrap_skip" : request.Reason.Trim();
+                o.PrintedBy = string.IsNullOrWhiteSpace(request.ClientId) ? "admin-bulk" : request.ClientId.Trim();
+                o.PrintCopies = null;
+                o.LastPrintError = null;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { updated = orders.Count });
+        }
+
         [HttpGet("/api/orders/{id}/receipt")]
         public async Task<IActionResult> GetReceipt(int id)
         {
@@ -271,6 +308,15 @@ namespace CSharpAssistant.API.Controllers
             public string ClientId { get; set; } = string.Empty;
             public string PrinterName { get; set; } = string.Empty;
             public string Error { get; set; } = string.Empty;
+        }
+
+        public class MarkPrintedBulkRequest
+        {
+            public string Store { get; set; } = string.Empty;
+            public DateTime BeforeUtc { get; set; }
+            public string? ClientId { get; set; }
+            public string? PrinterName { get; set; }
+            public string? Reason { get; set; }
         }
     }
 }
