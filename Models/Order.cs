@@ -23,6 +23,12 @@ public class Order
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? WhatsappNotifiedAt { get; set; }
 
+    public DateTime? PrintedAtUtc { get; set; }
+    public string? PrintReason { get; set; }
+    public string? PrintedBy { get; set; }
+    public int? PrintCopies { get; set; }
+    public string? LastPrintError { get; set; }
+
     public int? StoreCustomerId { get; set; }
     public StoreCustomer? StoreCustomer { get; set; }
 
