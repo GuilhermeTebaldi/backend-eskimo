@@ -1,3 +1,4 @@
+//CSharpAssistant.API/DTOs/StoreCustomerDTOs.cs
 using System;
 using System.ComponentModel.DataAnnotations;
 

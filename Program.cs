@@ -1,3 +1,4 @@
+//Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -183,8 +184,8 @@ app.Use(async (ctx, next) =>
             ctx.Response.Headers["Access-Control-Allow-Origin"] = origin;
             ctx.Response.Headers["Vary"] = "Origin";
             ctx.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            ctx.Response.Headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type,X-Store,X-Printer-Key";
-            ctx.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
+            ctx.Response.Headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type,X-Store";
+            ctx.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
 
             if (HttpMethods.IsOptions(ctx.Request.Method))
             {
@@ -255,10 +256,8 @@ app.Use(async (context, next) =>
         path.StartsWith("/api/settings") ||
         path.StartsWith("/api/store-settings") ||
         path.StartsWith("/api/storefront") ||
-        path.StartsWith("/api/printer") ||
         path.StartsWith("/api/promotions") ||
         path.StartsWith("/api/store-customers") ||
-        path.StartsWith("/api/payments") ||
         method == "OPTIONS";
 
     var isAdmin = context.User?.IsInRole("admin") == true;
